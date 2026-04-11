@@ -1,0 +1,251 @@
+CREATE DATABASE shop_runner;
+GO
+USE shop_runner;
+GO
+
+CREATE TABLE roles (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    name VARCHAR(20) NOT NULL UNIQUE,
+    description VARCHAR(255),
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
+);
+GO
+
+CREATE TABLE users (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    role_id INT NOT NULL,
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
+);
+GO
+
+CREATE TABLE customer_profiles (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT NOT NULL UNIQUE,
+    full_name VARCHAR(150) NOT NULL,
+    address VARCHAR(500),
+    dob DATE,
+    phone_number VARCHAR(20),
+    gender VARCHAR(20),
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE(),
+    CONSTRAINT chk_dob CHECK (dob IS NULL OR dob < GETDATE())
+);
+GO
+
+CREATE TABLE brands (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE
+);
+GO
+
+CREATE TABLE categories (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(255)
+);
+GO
+
+CREATE TABLE products (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    slug VARCHAR(300) NOT NULL UNIQUE,
+    description TEXT,
+    brand_id INT,
+    option1_name VARCHAR(50),
+    option2_name VARCHAR(50),
+    option3_name VARCHAR(50),
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
+);
+GO
+
+CREATE TABLE product_variants (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    product_id INT NOT NULL,
+    option1_value VARCHAR(50),
+    option2_value VARCHAR(50),
+    option3_value VARCHAR(50),
+    price DECIMAL(10,2) NOT NULL CHECK (price > 0),
+    compare_price DECIMAL(10,2),
+    stock INT NOT NULL CHECK (stock >= 0),
+    sku VARCHAR(100),
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE(),
+    CONSTRAINT uq_variant UNIQUE(product_id, option1_value, option2_value, option3_value)
+);
+GO
+
+CREATE INDEX idx_variant_product ON product_variants(product_id);
+GO
+
+CREATE TABLE product_images (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    product_id INT NOT NULL,
+    image_url VARCHAR(500) NOT NULL,
+    position INT NOT NULL CHECK (position > 0),
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE(),
+    UNIQUE(product_id, position)
+);
+GO
+
+CREATE INDEX idx_product_images_product ON product_images(product_id);
+GO
+
+CREATE TABLE comments (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT NOT NULL,
+    product_id INT NOT NULL,
+    content VARCHAR(500) NOT NULL,
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
+);
+GO
+
+CREATE INDEX idx_comments_product ON comments(product_id);
+CREATE INDEX idx_comments_user ON comments(user_id);
+GO
+
+CREATE TABLE product_category (
+    product_id INT NOT NULL,
+    category_id INT NOT NULL,
+    PRIMARY KEY (product_id, category_id)
+);
+GO
+
+CREATE TABLE orders (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT NOT NULL,
+    total_price DECIMAL(10,2) NOT NULL CHECK (total_price >= 0),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('PENDING','CONFIRMED','SHIPPING','COMPLETED','CANCELLED')),
+    shipping_address VARCHAR(500) NOT NULL,
+    phone_number VARCHAR(20) NOT NULL,
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
+);
+GO
+
+CREATE INDEX idx_orders_user ON orders(user_id);
+GO
+
+CREATE TABLE order_items (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    order_id INT NOT NULL,
+    product_variant_id INT NOT NULL,
+    quantity INT NOT NULL CHECK (quantity > 0),
+    price DECIMAL(10,2) NOT NULL CHECK (price > 0)
+);
+GO
+
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+GO
+
+CREATE TABLE carts (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT,
+    session_id VARCHAR(100),
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE(),
+    CONSTRAINT chk_cart_owner CHECK (
+        (user_id IS NOT NULL AND session_id IS NULL)
+        OR
+        (user_id IS NULL AND session_id IS NOT NULL)
+    )
+);
+GO
+
+CREATE TABLE cart_items (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    cart_id INT NOT NULL,
+    product_variant_id INT NOT NULL,
+    quantity INT NOT NULL CHECK (quantity > 0),
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
+);
+GO
+
+CREATE INDEX idx_cart_items_cart ON cart_items(cart_id);
+GO
+
+CREATE TABLE posts (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(300) NOT NULL UNIQUE,
+    content TEXT,
+    thumbnail VARCHAR(500),
+    user_id INT NOT NULL,
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
+);
+GO
+
+-- FOREIGN KEYS
+
+ALTER TABLE users
+ADD CONSTRAINT fk_users_role FOREIGN KEY(role_id) REFERENCES roles(id);
+GO
+
+ALTER TABLE customer_profiles
+ADD CONSTRAINT fk_customer_profiles_user FOREIGN KEY(user_id) REFERENCES users(id);
+GO
+
+ALTER TABLE products
+ADD CONSTRAINT fk_products_brand FOREIGN KEY(brand_id) REFERENCES brands(id);
+GO
+
+ALTER TABLE product_variants
+ADD CONSTRAINT fk_product_variants_product FOREIGN KEY(product_id) REFERENCES products(id);
+GO
+
+ALTER TABLE product_images
+ADD CONSTRAINT fk_product_images_product FOREIGN KEY(product_id) REFERENCES products(id);
+GO
+
+ALTER TABLE comments
+ADD CONSTRAINT fk_comments_user FOREIGN KEY(user_id) REFERENCES users(id);
+GO
+
+ALTER TABLE comments
+ADD CONSTRAINT fk_comments_product FOREIGN KEY(product_id) REFERENCES products(id);
+GO
+
+ALTER TABLE product_category
+ADD CONSTRAINT fk_product_category_product FOREIGN KEY(product_id) REFERENCES products(id);
+GO
+
+ALTER TABLE product_category
+ADD CONSTRAINT fk_product_category_category FOREIGN KEY(category_id) REFERENCES categories(id);
+GO
+
+ALTER TABLE orders
+ADD CONSTRAINT fk_orders_user FOREIGN KEY(user_id) REFERENCES users(id);
+GO
+
+ALTER TABLE order_items
+ADD CONSTRAINT fk_order_items_order FOREIGN KEY(order_id) REFERENCES orders(id);
+GO
+
+ALTER TABLE order_items
+ADD CONSTRAINT fk_order_items_variant FOREIGN KEY(product_variant_id) REFERENCES product_variants(id);
+GO
+
+ALTER TABLE carts
+ADD CONSTRAINT fk_carts_user FOREIGN KEY(user_id) REFERENCES users(id);
+GO
+
+ALTER TABLE cart_items
+ADD CONSTRAINT fk_cart_items_cart FOREIGN KEY(cart_id) REFERENCES carts(id);
+GO
+
+ALTER TABLE cart_items
+ADD CONSTRAINT fk_cart_items_variant FOREIGN KEY(product_variant_id) REFERENCES product_variants(id);
+GO
+
+ALTER TABLE posts
+ADD CONSTRAINT fk_posts_user FOREIGN KEY(user_id) REFERENCES users(id);
+GO
