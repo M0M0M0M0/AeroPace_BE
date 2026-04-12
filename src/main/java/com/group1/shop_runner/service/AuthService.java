@@ -47,7 +47,8 @@ public class AuthService {
                 user.getId(),
                 token,
                 user.getUsername(),
-                user.getRole().getName()
+                user.getRole().getName(),
+                user.getStatus()
         );
     }
     public String register(RegisterRequest request) {
