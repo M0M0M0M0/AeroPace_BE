@@ -145,29 +145,25 @@ public class ProductController {
     }
     //Lay tat ca san pham detail
     @GetMapping("/detail")
-    public ProductListResponse getAllProductDetail(
+    public Map<String, Object> getAllProductDetail(
             @RequestParam(defaultValue = "0") int page
     ) {
-        List<ProductResponse> products = productService.getAllProductDetail(page);
-        return new ProductListResponse(products);
+        return productService.getAllProductDetail(page);
     }
     //Lay san pham theo filter
     @GetMapping("/filter")
     public Map<String, Object> filterProducts(
+            @RequestParam(required = false) String name,
             @RequestParam(required = false) List<Long> brands,
             @RequestParam(required = false) List<Long> categories,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(defaultValue = "0") int page
     ) {
-        List<ProductResponse> products = productService.filterProducts(
-                brands,
-                categories,
-                minPrice,
-                maxPrice,
-                page
+        Map<String, Object> result = productService.filterProducts(
+                name, brands, categories, minPrice, maxPrice, page
         );
-
-        return Map.of("products", products);
+        return result;
     }
+
 }

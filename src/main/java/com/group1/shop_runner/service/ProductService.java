@@ -381,28 +381,20 @@ public class ProductService {
         return products;
     }
     // 3.3 Service: Lấy All Product details
-    public List<ProductResponse> getAllProductDetail(int page) {
+    public Map<String, Object> getAllProductDetail(int page) {
+        Pageable pageable = PageRequest.of(page, 20);
+        Page<ProductResponse> productPage = productRepository.getProducts(pageable);
+        List<ProductResponse> products = productPage.getContent();
 
-        Pageable pageable = PageRequest.of(page, 50);
+        List<Long> ids = products.stream().map(ProductResponse::getId).toList();
 
-        List<ProductResponse> products = productRepository.getProducts(pageable).getContent();
-
-        List<Long> ids = products.stream()
-                .map(ProductResponse::getId)
-                .toList();
-
-        var images = productImageRepository.getImagesByProductIds(ids);
-        var variants = productVariantRepository.getVariantsByProductIds(ids);
+        var images    = productImageRepository.getImagesByProductIds(ids);
+        var variants  = productVariantRepository.getVariantsByProductIds(ids);
         var categories = categoryRepository.getByProductIds(ids);
 
-        Map<Long, List<ProductImageDto>> imageMap =
-                images.stream().collect(Collectors.groupingBy(ProductImageDto::getProductId));
-
-        Map<Long, List<ProductVariantDto>> variantMap =
-                variants.stream().collect(Collectors.groupingBy(ProductVariantDto::getProductId));
-
-        Map<Long, List<CategoryDto>> categoryMap =
-                categories.stream().collect(Collectors.groupingBy(CategoryDto::getProductId));
+        Map<Long, List<ProductImageDto>>    imageMap    = images.stream().collect(Collectors.groupingBy(ProductImageDto::getProductId));
+        Map<Long, List<ProductVariantDto>>  variantMap  = variants.stream().collect(Collectors.groupingBy(ProductVariantDto::getProductId));
+        Map<Long, List<CategoryDto>>        categoryMap = categories.stream().collect(Collectors.groupingBy(CategoryDto::getProductId));
 
         for (ProductResponse p : products) {
             p.setImages(imageMap.getOrDefault(p.getId(), List.of()));
@@ -410,11 +402,15 @@ public class ProductService {
             p.setCategories(categoryMap.getOrDefault(p.getId(), List.of()));
         }
 
-        return products;
+        return Map.of(
+                "products", products,
+                "totalPages", productPage.getTotalPages()
+        );
     }
     //3.4 lay product detail theo filter
     @Transactional(readOnly = true)
-    public List<ProductResponse> filterProducts(
+    public Map<String, Object> filterProducts(
+            String name,
             List<Long> brandIds,
             List<Long> categoryIds,
             BigDecimal minPrice,
@@ -425,36 +421,25 @@ public class ProductService {
 
         if (brandIds != null && brandIds.isEmpty()) brandIds = null;
         if (categoryIds != null && categoryIds.isEmpty()) categoryIds = null;
+        if (name != null && name.isBlank()) name = null;
 
         Page<ProductResponse> productPage = productRepository.filterProducts(
-                brandIds,
-                categoryIds,
-                minPrice,
-                maxPrice,
-                pageable
+                name, brandIds, categoryIds, minPrice, maxPrice, pageable
         );
 
         List<ProductResponse> products = productPage.getContent();
 
-        if (products.isEmpty()) return List.of();
+        if (products.isEmpty()) return Map.of("products", List.of(), "totalPages", 0);
 
-        List<Long> ids = products.stream()
-                .map(ProductResponse::getId)
-                .toList();
+        List<Long> ids = products.stream().map(ProductResponse::getId).toList();
 
-        // ================= LOAD EXTRA DATA =================
-        var images = productImageRepository.getImagesByProductIds(ids);
-        var variants = productVariantRepository.getVariantsByProductIds(ids);
+        var images     = productImageRepository.getImagesByProductIds(ids);
+        var variants   = productVariantRepository.getVariantsByProductIds(ids);
         var categories = categoryRepository.getByProductIds(ids);
 
-        Map<Long, List<ProductImageDto>> imageMap =
-                images.stream().collect(Collectors.groupingBy(ProductImageDto::getProductId));
-
-        Map<Long, List<ProductVariantDto>> variantMap =
-                variants.stream().collect(Collectors.groupingBy(ProductVariantDto::getProductId));
-
-        Map<Long, List<CategoryDto>> categoryMap =
-                categories.stream().collect(Collectors.groupingBy(CategoryDto::getProductId));
+        Map<Long, List<ProductImageDto>>   imageMap    = images.stream().collect(Collectors.groupingBy(ProductImageDto::getProductId));
+        Map<Long, List<ProductVariantDto>> variantMap  = variants.stream().collect(Collectors.groupingBy(ProductVariantDto::getProductId));
+        Map<Long, List<CategoryDto>>       categoryMap = categories.stream().collect(Collectors.groupingBy(CategoryDto::getProductId));
 
         for (ProductResponse p : products) {
             p.setImages(imageMap.getOrDefault(p.getId(), List.of()));
@@ -462,6 +447,9 @@ public class ProductService {
             p.setCategories(categoryMap.getOrDefault(p.getId(), List.of()));
         }
 
-        return products;
+        return Map.of(
+                "products", products,
+                "totalPages", productPage.getTotalPages()
+        );
     }
 }
