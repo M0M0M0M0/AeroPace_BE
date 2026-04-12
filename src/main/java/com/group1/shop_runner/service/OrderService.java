@@ -17,7 +17,9 @@ import com.group1.shop_runner.repository.CartItemRepository;
 import com.group1.shop_runner.repository.CartRepository;
 import com.group1.shop_runner.repository.OrderItemRepository;
 import com.group1.shop_runner.repository.OrderRepository;
+import com.group1.shop_runner.specification.OrderSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -247,13 +249,17 @@ public class OrderService {
         return response;
     }
     //lay tat ca order
-    public List<OrderListResponse> getAllOrders() {
-        return orderRepository.findAll()
+    public List<OrderListResponse> getAllOrders(
+            String id, String receiverName, String phoneNumber,
+            String shippingAddress, String status,
+            String dateFrom, String dateTo
+    ) {
+        var spec = OrderSpecification.build(
+                id, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo
+        );
+        return orderRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "id"))
                 .stream()
-                .map(order -> {
-                    OrderListResponse res = mapToOrderListResponse(order);
-                    return res;
-                })
+                .map(this::mapToOrderListResponse)
                 .toList();
     }
 }

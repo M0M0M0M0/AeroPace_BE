@@ -77,7 +77,17 @@ public class OrderController {
     // API 6: Lấy tất cả đơn hàng (Admin)
 // GET /api/v1/orders
     @GetMapping
-    public List<OrderListResponse> getAllOrders() {
-        return orderService.getAllOrders();
+    public List<OrderListResponse> getAllOrders(
+            @RequestParam(required = false) String id,
+            @RequestParam(required = false) String receiverName,
+            @RequestParam(required = false) String phoneNumber,
+            @RequestParam(required = false) String shippingAddress,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo
+    ) {
+        return orderService.getAllOrders(
+                id, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo
+        );
     }
 }
