@@ -27,8 +27,10 @@ public enum ErrorCode {
     CUSTOMER_PROFILE_NOT_FOUND("3016", "Customer profile not found", HttpStatus.NOT_FOUND),
     CUSTOMER_PROFILE_ALREADY_EXISTS("3017", "Customer profile already exists", HttpStatus.BAD_REQUEST),
     POST_NOT_FOUND("3018", "Post not found", HttpStatus.NOT_FOUND),
-    POST_ALREADY_EXISTS("3019", "Post already exists", HttpStatus.BAD_REQUEST),COMMENT_NOT_FOUND("3020", "Comment not found", HttpStatus.NOT_FOUND),
-    INVALID_REQUEST("1005", "Invalid request", HttpStatus.BAD_REQUEST);
+    POST_ALREADY_EXISTS("3019", "Post already exists", HttpStatus.BAD_REQUEST),
+    COMMENT_NOT_FOUND("3020", "Comment not found", HttpStatus.NOT_FOUND),
+    INVALID_REQUEST("1005", "Invalid request", HttpStatus.BAD_REQUEST),
+    BRAND_NAME_ALREADY_EXISTS("3022","Brand name already exists",HttpStatus.BAD_REQUEST);
     private final String code;
     private final String message;
     private final HttpStatus status;

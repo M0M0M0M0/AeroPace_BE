@@ -1,4 +1,4 @@
-package com.group1.shop_runner.dto.product.response;
+package com.group1.shop_runner.dto.category.reponse;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

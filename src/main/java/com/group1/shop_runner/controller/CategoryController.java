@@ -1,7 +1,7 @@
 package com.group1.shop_runner.controller;
 
-import com.group1.shop_runner.dto.product.request.CategoryRequest;
-import com.group1.shop_runner.dto.product.response.CategoryResponse;
+import com.group1.shop_runner.dto.category.request.CategoryRequest;
+import com.group1.shop_runner.dto.category.reponse.CategoryResponse;
 import com.group1.shop_runner.service.CategoryService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

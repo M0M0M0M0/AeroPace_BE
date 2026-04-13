@@ -1,7 +1,7 @@
 package com.group1.shop_runner.service;
 
-import com.group1.shop_runner.dto.product.request.CategoryRequest;
-import com.group1.shop_runner.dto.product.response.CategoryResponse;
+import com.group1.shop_runner.dto.category.request.CategoryRequest;
+import com.group1.shop_runner.dto.category.reponse.CategoryResponse;
 import com.group1.shop_runner.entity.Category;
 import com.group1.shop_runner.shared.exception.AppException;
 import com.group1.shop_runner.shared.exception.ErrorCode;

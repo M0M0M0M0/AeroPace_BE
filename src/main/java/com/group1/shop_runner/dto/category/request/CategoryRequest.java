@@ -1,4 +1,4 @@
-package com.group1.shop_runner.dto.product.request;
+package com.group1.shop_runner.dto.category.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
