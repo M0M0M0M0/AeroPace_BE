@@ -17,6 +17,8 @@ public class OrderDetailResponse {
     private OrderStatus status;
     private String shippingAddress;
     private String phoneNumber;
+    private String receiverName;
+    private String note;
     private LocalDateTime createdAt;
     private List<OrderItemResponse> items;
 }

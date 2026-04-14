@@ -11,4 +11,5 @@ public class CheckoutRequest {
     private String phoneNumber;
     private String paymentMethod;
     private String receiverName;
+    private String note;
 }

@@ -14,6 +14,7 @@ import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findBySlug(String slug);
+
     @Query("""
     SELECT new com.group1.shop_runner.dto.product.response.ProductResponse(
         p.id,
@@ -44,8 +45,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                 )
                 FROM Product p
                 LEFT JOIN p.brand b
+                WHERE p.status = com.group1.shop_runner.entity.Product.Status.ACTIVE
             """)
     Page<ProductResponse> getProducts(Pageable pageable);
+
     @Query(
             value = """
         SELECT DISTINCT new com.group1.shop_runner.dto.product.response.ProductResponse(
@@ -56,7 +59,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         LEFT JOIN p.brand b
         LEFT JOIN p.variants v
         LEFT JOIN p.productCategories pc
-        WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
+        WHERE p.status = com.group1.shop_runner.entity.Product.Status.ACTIVE
+        AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
                OR LOWER(b.name) LIKE LOWER(CONCAT('%', :name, '%'))
                OR EXISTS (
                    SELECT 1 FROM ProductCategory pc2
@@ -75,7 +79,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         LEFT JOIN p.brand b
         LEFT JOIN p.variants v
         LEFT JOIN p.productCategories pc
-        WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
+        WHERE p.status = com.group1.shop_runner.entity.Product.Status.ACTIVE
+        AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
                OR LOWER(b.name) LIKE LOWER(CONCAT('%', :name, '%'))
                OR EXISTS (
                    SELECT 1 FROM ProductCategory pc2
@@ -90,12 +95,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     """
     )
     Page<ProductResponse> filterProducts(
-            @Param("name") String name,               // thêm
+            @Param("name") String name,
             @Param("brandIds") List<Long> brandIds,
             @Param("categoryIds") List<Long> categoryIds,
             @Param("minPrice") BigDecimal minPrice,
             @Param("maxPrice") BigDecimal maxPrice,
             Pageable pageable
     );
-
 }

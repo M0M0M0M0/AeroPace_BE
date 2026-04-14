@@ -21,7 +21,6 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    // FK user_id
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -41,6 +40,9 @@ public class Order {
 
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
+
+    @Column(name = "note", length = 500)
+    private String note;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

@@ -22,4 +22,5 @@ public class CartItemResponse {
     private Integer quantity;
     private BigDecimal lineTotal;
     private String image;
+    private Integer stock;
 }

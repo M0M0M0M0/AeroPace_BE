@@ -1,5 +1,6 @@
 package com.group1.shop_runner.entity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,7 +33,6 @@ public class Product {
     @Column(name = "description")
     private String description;
 
-    // FK brand_id
     @ManyToOne
     @JoinColumn(name = "brand_id")
     private Brand brand;
@@ -45,6 +45,10 @@ public class Product {
 
     @Column(name = "option3_name", length = 50)
     private String option3Name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 20)
+    private Status status = Status.ACTIVE;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -63,4 +67,13 @@ public class Product {
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore
     private List<ProductCategory> productCategories;
+
+    public enum Status {
+        ACTIVE, DRAFT, ARCHIVED;
+
+        @JsonCreator
+        public static Status fromValue(String value) {
+            return Status.valueOf(value.toUpperCase());
+        }
+    }
 }

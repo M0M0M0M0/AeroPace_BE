@@ -6,7 +6,6 @@ import com.group1.shop_runner.dto.product.ProductVariantDto;
 import com.group1.shop_runner.dto.product.request.ProductRequest;
 import com.group1.shop_runner.dto.product.request.ProductVariantRequest;
 import com.group1.shop_runner.dto.product.response.ProductDetailResponse;
-import com.group1.shop_runner.dto.product.response.ProductListResponse;
 import com.group1.shop_runner.dto.product.response.ProductResponse;
 import com.group1.shop_runner.dto.product.response.ProductVariantResponse;
 import com.group1.shop_runner.entity.Product;
@@ -21,8 +20,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.group1.shop_runner.entity.ProductCategory;
 import com.group1.shop_runner.entity.Brand;
+
 
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -36,6 +35,9 @@ public class ProductService {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private OrderItemRepository orderItemRepository;
 
     @Autowired
     private ProductVariantRepository productVariantRepository;
@@ -88,7 +90,7 @@ public class ProductService {
     // =========================================================
     @Transactional(readOnly = true)
     public List<ProductVariantResponse> getVariantsByProduct(Long productId) {
-        List<ProductVariant> variants = productVariantRepository.findByProduct_Id(productId);
+        List<ProductVariant> variants = productVariantRepository.findByProduct_IdAndIsDeletedFalse(productId);
 
         return variants.stream()
                 .map(this::mapToProductVariantResponse)
@@ -113,6 +115,7 @@ public class ProductService {
         product.setOption1Name(request.getOption1Name());
         product.setOption2Name(request.getOption2Name());
         product.setOption3Name(request.getOption3Name());
+        product.setStatus(request.getStatus() != null ? request.getStatus() : Product.Status.ACTIVE);
 
         Product savedProduct = productRepository.save(product);
 
@@ -163,6 +166,7 @@ public class ProductService {
         product.setOption1Name(request.getOption1Name());
         product.setOption2Name(request.getOption2Name());
         product.setOption3Name(request.getOption3Name());
+        product.setStatus(request.getStatus() != null ? request.getStatus() : Product.Status.ACTIVE);
 
         Product updatedProduct = productRepository.save(product);
 
@@ -212,7 +216,14 @@ public class ProductService {
         ProductVariant variant = productVariantRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND));
 
-        productVariantRepository.delete(variant);
+        boolean hasOrder = orderItemRepository.existsByProductVariantId(id);
+        //check co order de quyet dinh solf/hard delete
+        if (hasOrder) {
+            variant.setIsDeleted(true);
+            productVariantRepository.save(variant);
+        } else {
+            productVariantRepository.delete(variant);
+        }
     }
 
     // =========================================================
@@ -266,6 +277,7 @@ public class ProductService {
         List<ProductVariantResponse> variants = product.getVariants() == null
                 ? List.of()
                 : product.getVariants().stream()
+                .filter(v -> !Boolean.TRUE.equals(v.getIsDeleted()))
                 .map(this::mapToProductVariantResponse)
                 .toList();
 
@@ -306,6 +318,7 @@ public class ProductService {
         }
 
         return product.getVariants().stream()
+                .filter(v -> !Boolean.TRUE.equals(v.getIsDeleted()))
                 .map(ProductVariant::getPrice)
                 .filter(price -> price != null)
                 .min(BigDecimal::compareTo)
@@ -451,5 +464,11 @@ public class ProductService {
                 "products", products,
                 "totalPages", productPage.getTotalPages()
         );
+    }
+    public void updateProductStatus(Long id, Product.Status status) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+        product.setStatus(status);
+        productRepository.save(product);
     }
 }

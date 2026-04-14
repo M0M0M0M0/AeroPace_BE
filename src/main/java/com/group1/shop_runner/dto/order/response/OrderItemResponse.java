@@ -11,5 +11,10 @@ public class OrderItemResponse {
     private Integer productVariantId;
     private Integer quantity;
     private BigDecimal price;
+
     private String productName;
+    private String variantName;
+    private String sku;
+    private String productImgUrl;
+    private String note;
 }

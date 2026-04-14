@@ -6,6 +6,7 @@ import com.group1.shop_runner.dto.product.response.ProductDetailResponse;
 import com.group1.shop_runner.dto.product.response.ProductListResponse;
 import com.group1.shop_runner.dto.product.response.ProductResponse;
 import com.group1.shop_runner.dto.product.response.ProductVariantResponse;
+import com.group1.shop_runner.entity.Product;
 import com.group1.shop_runner.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,16 +124,7 @@ public class ProductController {
         productService.deleteVariant(id);
         return "Delete variant successfully";
     }
-    // =========================================================
-    // API 10: GET /api/products/category/{categoryId}
-    // Mục đích:
-    // - Lấy danh sách product theo category
-    // - Trả về kiểu ProductListResponse để hiển thị ngoài trang list
-    // =========================================================
-//    @GetMapping("/category/{categoryId}")
-//    public List<ProductListResponse> getProductsByCategory(@PathVariable Long categoryId) {
-//        return productService.getProductsByCategory(categoryId);
-//    }
+
     //Lay 1 san pham detail theo id
     @GetMapping("/detail/{id}")
     public ProductResponse getProductDetail(@PathVariable Long id) {
@@ -164,6 +156,13 @@ public class ProductController {
                 name, brands, categories, minPrice, maxPrice, page
         );
         return result;
+    }
+    // - Cập nhật status của product (active/draft/archived)
+    @PatchMapping("/{id}/status")
+    public String updateProductStatus(@PathVariable Long id,
+                                      @RequestParam Product.Status status) {
+        productService.updateProductStatus(id, status);
+        return "Update product status successfully";
     }
 
 }

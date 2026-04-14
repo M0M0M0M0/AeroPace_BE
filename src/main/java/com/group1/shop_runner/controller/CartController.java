@@ -2,72 +2,42 @@ package com.group1.shop_runner.controller;
 
 import com.group1.shop_runner.config.CustomUserDetails;
 import com.group1.shop_runner.dto.cart.request.AddToCartRequest;
-import com.group1.shop_runner.dto.cart.request.MergeCartRequest;
 import com.group1.shop_runner.dto.cart.request.UpdateCartItemRequest;
 import com.group1.shop_runner.dto.cart.response.CartResponse;
 import com.group1.shop_runner.service.CartService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/cart")
-//@CrossOrigin(origins = "*")
-
 public class CartController {
 
     @Autowired
     private CartService cartService;
 
     // =========================================================
-    // API 1: GET CART (USER / SESSION)
+    // API 1: GET CART
     // =========================================================
     @GetMapping
-    public CartResponse getCart(
-            @RequestParam(required = false) String sessionId,
-            Authentication authentication
-    ) {
-        Long userId = null;
-
-        if (authentication != null && authentication.isAuthenticated()) {
-            CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
-            userId = user.getId();
-        }
-
-        return cartService.getCart(userId, sessionId);
+    public CartResponse getCart(Authentication authentication) {
+        Long userId = extractUserId(authentication);
+        return cartService.getCart(userId);
     }
 
     // =========================================================
     // API 2: ADD TO CART
     // =========================================================
     @PostMapping("/items")
-    public ResponseEntity<CartResponse> addToCart(
+    public CartResponse addToCart(
             @Valid @RequestBody AddToCartRequest request,
             Authentication authentication
     ) {
-        Long userId = null;
-
-        if (authentication != null && authentication.isAuthenticated()
-                && authentication.getPrincipal() instanceof CustomUserDetails) {
-            CustomUserDetails user = (CustomUserDetails) authentication.getPrincipal();
-            userId = user.getId();
-        }
-
-        String sessionId = request.getSessionId();
-
-        // Nếu chưa login và chưa có sessionId → tạo mới
-        if (userId == null && (sessionId == null || sessionId.isEmpty())) {
-            sessionId = java.util.UUID.randomUUID().toString();
-        }
-
-        CartResponse response = cartService.addToCart(userId, sessionId, request);
-
-        // trả sessionId về cho FE
-        return ResponseEntity.ok()
-                .header("X-Session-Id", sessionId)
-                .body(response);
+        Long userId = extractUserId(authentication);
+        return cartService.addToCart(userId, request);
     }
 
     // =========================================================
@@ -90,27 +60,35 @@ public class CartController {
     }
 
     // =========================================================
-    // API 5: CLEAR CART BY USER
+    // API 5: CLEAR CART
     // =========================================================
-    @DeleteMapping("/clear/user/{userId}")
-    public String clearCartByUser(@PathVariable Long userId) {
+    @DeleteMapping("/clear")
+    public String clearCart(Authentication authentication) {
+        Long userId = extractUserId(authentication);
         cartService.clearCart(userId);
         return "Clear cart successfully";
     }
 
     // =========================================================
-    // API 6: CLEAR CART BY SESSION
+    // API 6: MERGE CART (localStorage → DB khi login)
     // =========================================================
-    @DeleteMapping("/clear/session")
-    public String clearCartBySession(@RequestParam String sessionId) {
-        cartService.clearCartBySession(sessionId);
-        return "Clear session cart successfully";
-    }
-    //merge cart khi user login
     @PostMapping("/merge")
-    public CartResponse mergeCart(@RequestBody MergeCartRequest request) {
-        cartService.mergeCart(request.getSessionId(), request.getUserId());
-        return cartService.getCart(request.getUserId(), null);
+    public CartResponse mergeCart(
+            @RequestBody List<AddToCartRequest> guestItems,
+            Authentication authentication
+    ) {
+        Long userId = extractUserId(authentication);
+        return cartService.mergeCart(userId, guestItems);
     }
 
+    // =========================
+    // HELPER
+    // =========================
+    private Long extractUserId(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()
+                && authentication.getPrincipal() instanceof CustomUserDetails user) {
+            return user.getId();
+        }
+        return null;
+    }
 }
