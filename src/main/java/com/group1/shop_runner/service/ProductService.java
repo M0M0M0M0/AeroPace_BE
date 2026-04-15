@@ -204,7 +204,8 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        productRepository.delete(product);
+        product.setStatus(Product.Status.DELETED);
+        productRepository.save(product);
     }
 
     // =========================================================
@@ -348,11 +349,15 @@ public class ProductService {
 
     // 3.1 Service: Lay 1 thong tin chi tiet san pham theo id
     public ProductResponse getProductDetail(Long id) {
-
-        return getProductsByIds(List.of(id))
+        ProductResponse product = getProductsByIds(List.of(id))
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        if (product.getStatus() == Product.Status.DELETED) {
+            throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+        return product;
     }
     // 3.2 Service: Lay nhieu thong tin chi tiet san pham theo list id
     public List<ProductResponse> getProductsByIds(List<Long> ids) {
@@ -470,5 +475,86 @@ public class ProductService {
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         product.setStatus(status);
         productRepository.save(product);
+    }
+
+    // 4.1 Admin: Lấy chi tiết 1 sản phẩm theo id
+    public ProductResponse getProductDetailForAdmin(Long id) {
+        return getProductsByIds(List.of(id))
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+    }
+    // 4.2 Admin: Lấy tất cả sản phẩm
+    public Map<String, Object> getAllProductDetailForAdmin(int page) {
+        Pageable pageable = PageRequest.of(page, 20);
+        Page<ProductResponse> productPage = productRepository.getProductsForAdmin(pageable);
+        List<ProductResponse> products = productPage.getContent();
+        List<Long> ids = products.stream().map(ProductResponse::getId).toList();
+
+        var images     = productImageRepository.getImagesByProductIds(ids);
+        var variants   = productVariantRepository.getVariantsByProductIds(ids);
+        var categories = categoryRepository.getByProductIds(ids);
+
+        Map<Long, List<ProductImageDto>>   imageMap    = images.stream().collect(Collectors.groupingBy(ProductImageDto::getProductId));
+        Map<Long, List<ProductVariantDto>> variantMap  = variants.stream().collect(Collectors.groupingBy(ProductVariantDto::getProductId));
+        Map<Long, List<CategoryDto>>       categoryMap = categories.stream().collect(Collectors.groupingBy(CategoryDto::getProductId));
+
+        for (ProductResponse p : products) {
+            p.setImages(imageMap.getOrDefault(p.getId(), List.of()));
+            p.setVariants(variantMap.getOrDefault(p.getId(), List.of()));
+            p.setCategories(categoryMap.getOrDefault(p.getId(), List.of()));
+        }
+
+        return Map.of(
+                "products", products,
+                "totalPages", productPage.getTotalPages()
+        );
+    }
+
+    // 4.3 Admin: Filter sản phẩm
+    @Transactional(readOnly = true)
+    public Map<String, Object> filterProductsForAdmin(
+            String name,
+            List<Long> brandIds,
+            List<Long> categoryIds,
+            BigDecimal minPrice,
+            BigDecimal maxPrice,
+            List<Product.Status> statuses,
+            int page
+    ) {
+        Pageable pageable = PageRequest.of(page, 20);
+
+        if (brandIds != null && brandIds.isEmpty()) brandIds = null;
+        if (categoryIds != null && categoryIds.isEmpty()) categoryIds = null;
+        if (statuses != null && statuses.isEmpty()) statuses = null;
+        if (name != null && name.isBlank()) name = null;
+
+        Page<ProductResponse> productPage = productRepository.filterProductsForAdmin(
+                name, brandIds, categoryIds, minPrice, maxPrice, statuses, pageable
+        );
+
+        List<ProductResponse> products = productPage.getContent();
+        if (products.isEmpty()) return Map.of("products", List.of(), "totalPages", 0);
+
+        List<Long> ids = products.stream().map(ProductResponse::getId).toList();
+
+        var images     = productImageRepository.getImagesByProductIds(ids);
+        var variants   = productVariantRepository.getVariantsByProductIds(ids);
+        var categories = categoryRepository.getByProductIds(ids);
+
+        Map<Long, List<ProductImageDto>>   imageMap    = images.stream().collect(Collectors.groupingBy(ProductImageDto::getProductId));
+        Map<Long, List<ProductVariantDto>> variantMap  = variants.stream().collect(Collectors.groupingBy(ProductVariantDto::getProductId));
+        Map<Long, List<CategoryDto>>       categoryMap = categories.stream().collect(Collectors.groupingBy(CategoryDto::getProductId));
+
+        for (ProductResponse p : products) {
+            p.setImages(imageMap.getOrDefault(p.getId(), List.of()));
+            p.setVariants(variantMap.getOrDefault(p.getId(), List.of()));
+            p.setCategories(categoryMap.getOrDefault(p.getId(), List.of()));
+        }
+
+        return Map.of(
+                "products", products,
+                "totalPages", productPage.getTotalPages()
+        );
     }
 }

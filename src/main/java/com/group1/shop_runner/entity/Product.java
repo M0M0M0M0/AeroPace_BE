@@ -69,7 +69,7 @@ public class Product {
     private List<ProductCategory> productCategories;
 
     public enum Status {
-        ACTIVE, DRAFT, ARCHIVED;
+        ACTIVE, DRAFT, ARCHIVED,DELETED;
 
         @JsonCreator
         public static Status fromValue(String value) {

@@ -16,11 +16,12 @@ public class ProductVariantDto {
     private BigDecimal comparePrice;
     private Integer stock;
     private String sku;
+    private Boolean isDeleted;
 
     public ProductVariantDto(Long productId, Long id, String option1Value,
                              String option2Value, String option3Value,
                              BigDecimal price, BigDecimal comparePrice,
-                             Integer stock, String sku) {
+                             Integer stock, String sku, Boolean isDeleted) {
         this.productId = productId;
         this.id = id;
         this.option1Value = option1Value;
@@ -30,5 +31,6 @@ public class ProductVariantDto {
         this.comparePrice = comparePrice;
         this.stock = stock;
         this.sku = sku;
+        this.isDeleted = isDeleted;
     }
 }

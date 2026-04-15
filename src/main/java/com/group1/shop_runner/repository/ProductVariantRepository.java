@@ -24,7 +24,8 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
             v.price,
             v.comparePrice,
             v.stock,
-            v.sku
+            v.sku,
+            v.isDeleted
         )
         FROM ProductVariant v
         WHERE v.product.id IN :ids

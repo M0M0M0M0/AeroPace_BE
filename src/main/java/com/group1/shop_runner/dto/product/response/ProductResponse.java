@@ -3,6 +3,7 @@ package com.group1.shop_runner.dto.product.response;
 import com.group1.shop_runner.dto.category.CategoryDto;
 import com.group1.shop_runner.dto.product.ProductImageDto;
 import com.group1.shop_runner.dto.product.ProductVariantDto;
+import com.group1.shop_runner.entity.Product;
 import lombok.Getter;
 import lombok.Setter;
 import java.util.List;
@@ -16,6 +17,7 @@ public class ProductResponse {
     private String slug;
     private String description;
     private String brand;
+    private Product.Status status;
 
     private String option1Name;
     private String option2Name;
@@ -27,7 +29,7 @@ public class ProductResponse {
 
     //     constructor dùng cho JPQL
     public ProductResponse(Long id, String name, String slug, String description,
-                           String brand, String option1Name, String option2Name, String option3Name) {
+                           String brand, String option1Name, String option2Name, String option3Name,Product.Status status ) {
         this.id = id;
         this.name = name;
         this.slug = slug;
@@ -36,5 +38,6 @@ public class ProductResponse {
         this.option1Name = option1Name;
         this.option2Name = option2Name;
         this.option3Name = option3Name;
+        this.status = status;
     }
 }

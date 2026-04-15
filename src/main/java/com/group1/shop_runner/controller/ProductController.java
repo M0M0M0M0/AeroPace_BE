@@ -1,14 +1,9 @@
 package com.group1.shop_runner.controller;
 
-import com.group1.shop_runner.dto.product.request.ProductRequest;
-import com.group1.shop_runner.dto.product.request.ProductVariantRequest;
 import com.group1.shop_runner.dto.product.response.ProductDetailResponse;
-import com.group1.shop_runner.dto.product.response.ProductListResponse;
 import com.group1.shop_runner.dto.product.response.ProductResponse;
 import com.group1.shop_runner.dto.product.response.ProductVariantResponse;
-import com.group1.shop_runner.entity.Product;
 import com.group1.shop_runner.service.ProductService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,28 +13,16 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/products")
-//@CrossOrigin(origins = "*")
 public class ProductController {
 
     @Autowired
     private ProductService productService;
 
     // =========================================================
-    // API 1: GET /api/v1/products
-    // Mục đích:
-    // - Lấy danh sách tất cả sản phẩm
-    // - Dùng cho trang danh sách sản phẩm ngoài frontend
-    // =========================================================
-//    @GetMapping
-//    public List<ProductListResponse> getAllProducts() {
-//        return productService.getAllProducts();
-//    }
-
-    // =========================================================
-    // API 2: GET /api/v1/products/{id}
+    // PUBLIC API 1: GET /api/v1/products/{id}
     // Mục đích:
     // - Lấy chi tiết 1 sản phẩm theo id
-    // - Dùng cho trang product detail
+    // - Chỉ trả về nếu status = ACTIVE (ném 404 nếu DELETED/ARCHIVED/DRAFT)
     // =========================================================
     @GetMapping("/{id}")
     public ProductDetailResponse getProductById(@PathVariable Long id) {
@@ -47,10 +30,9 @@ public class ProductController {
     }
 
     // =========================================================
-    // API 3: GET /api/v1/products/{id}/variants
+    // PUBLIC API 2: GET /api/v1/products/{id}/variants
     // Mục đích:
-    // - Lấy danh sách variant của 1 sản phẩm
-    // - Dùng khi frontend muốn load riêng danh sách variant
+    // - Lấy danh sách variant của 1 sản phẩm (chỉ variant chưa bị xóa)
     // =========================================================
     @GetMapping("/{id}/variants")
     public List<ProductVariantResponse> getVariantsByProduct(@PathVariable Long id) {
@@ -58,91 +40,44 @@ public class ProductController {
     }
 
     // =========================================================
-    // API 4: POST /api/v1/products
+    // PUBLIC API 3: GET /api/v1/products/detail/{id}
     // Mục đích:
-    // - Tạo mới 1 sản phẩm
-    // - Request body: ProductRequest
+    // - Lấy 1 sản phẩm detail (kèm images, variants, categories)
+    // - Chỉ trả về nếu status = ACTIVE
     // =========================================================
-    @PostMapping
-    public ProductDetailResponse createProduct(@Valid @RequestBody ProductRequest request) {
-        return productService.createProduct(request);
-    }
-
-    // =========================================================
-    // API 5: POST /api/v1/products/variants
-    // Mục đích:
-    // - Tạo mới 1 variant cho product
-    // - Request body: ProductVariantRequest
-    // =========================================================
-    @PostMapping("/variants")
-    public ProductVariantResponse createVariant(@Valid @RequestBody ProductVariantRequest request) {
-        return productService.createVariant(request);
-    }
-
-    // =========================================================
-    // API 6: PUT /api/v1/products/{id}
-    // Mục đích:
-    // - Cập nhật thông tin product theo id
-    // - Request body: ProductRequest
-    // =========================================================
-    @PutMapping("/{id}")
-    public ProductDetailResponse updateProduct(@PathVariable Long id,
-                                               @Valid @RequestBody ProductRequest request) {
-        return productService.updateProduct(id, request);
-    }
-
-    // =========================================================
-    // API 7: PUT /api/v1/products/variants/{id}
-    // Mục đích:
-    // - Cập nhật thông tin variant theo id
-    // - Request body: ProductVariantRequest
-    // =========================================================
-    @PutMapping("/variants/{id}")
-    public ProductVariantResponse updateVariant(@PathVariable Long id,
-                                                @Valid @RequestBody ProductVariantRequest request) {
-        return productService.updateVariant(id, request);
-    }
-
-    // =========================================================
-    // API 8: DELETE /api/v1/products/{id}
-    // Mục đích:
-    // - Xóa product theo id
-    // =========================================================
-    @DeleteMapping("/{id}")
-    public String deleteProduct(@PathVariable Long id) {
-        productService.deleteProduct(id);
-        return "Delete product successfully";
-    }
-
-    // =========================================================
-    // API 9: DELETE /api/v1/products/variants/{id}
-    // Mục đích:
-    // - Xóa variant theo id
-    // =========================================================
-    @DeleteMapping("/variants/{id}")
-    public String deleteVariant(@PathVariable Long id) {
-        productService.deleteVariant(id);
-        return "Delete variant successfully";
-    }
-
-    //Lay 1 san pham detail theo id
     @GetMapping("/detail/{id}")
     public ProductResponse getProductDetail(@PathVariable Long id) {
         return productService.getProductDetail(id);
     }
-    //lay nhieu san pham detail theo id
+
+    // =========================================================
+    // PUBLIC API 4: GET /api/v1/products/by-ids
+    // Mục đích:
+    // - Lấy nhiều sản phẩm detail theo list id
+    // - Chỉ trả về sản phẩm có status = ACTIVE
+    // =========================================================
     @GetMapping("/by-ids")
     public List<ProductResponse> getProductsByIds(@RequestParam List<Long> ids) {
         return productService.getProductsByIds(ids);
     }
-    //Lay tat ca san pham detail
+
+    // =========================================================
+    // PUBLIC API 5: GET /api/v1/products/detail
+    // Mục đích:
+    // - Lấy tất cả sản phẩm ACTIVE (có phân trang)
+    // =========================================================
     @GetMapping("/detail")
     public Map<String, Object> getAllProductDetail(
             @RequestParam(defaultValue = "0") int page
     ) {
         return productService.getAllProductDetail(page);
     }
-    //Lay san pham theo filter
+
+    // =========================================================
+    // PUBLIC API 6: GET /api/v1/products/filter
+    // Mục đích:
+    // - Filter sản phẩm ACTIVE theo tên, brand, category, giá
+    // =========================================================
     @GetMapping("/filter")
     public Map<String, Object> filterProducts(
             @RequestParam(required = false) String name,
@@ -152,17 +87,8 @@ public class ProductController {
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(defaultValue = "0") int page
     ) {
-        Map<String, Object> result = productService.filterProducts(
+        return productService.filterProducts(
                 name, brands, categories, minPrice, maxPrice, page
         );
-        return result;
     }
-    // - Cập nhật status của product (active/draft/archived)
-    @PatchMapping("/{id}/status")
-    public String updateProductStatus(@PathVariable Long id,
-                                      @RequestParam Product.Status status) {
-        productService.updateProductStatus(id, status);
-        return "Update product status successfully";
-    }
-
 }

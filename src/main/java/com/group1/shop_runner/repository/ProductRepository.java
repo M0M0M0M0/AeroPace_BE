@@ -24,7 +24,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         b.name,
         p.option1Name,
         p.option2Name,
-        p.option3Name
+        p.option3Name,
+        p.status
     )
     FROM Product p
     LEFT JOIN p.brand b
@@ -41,7 +42,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                     b.name,
                     p.option1Name,
                     p.option2Name,
-                    p.option3Name
+                    p.option3Name,
+                    p.status
                 )
                 FROM Product p
                 LEFT JOIN p.brand b
@@ -53,7 +55,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             value = """
         SELECT DISTINCT new com.group1.shop_runner.dto.product.response.ProductResponse(
             p.id, p.name, p.slug, p.description, b.name,
-            p.option1Name, p.option2Name, p.option3Name
+            p.option1Name, p.option2Name, p.option3Name, p.status
         )
         FROM Product p
         LEFT JOIN p.brand b
@@ -100,6 +102,72 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("categoryIds") List<Long> categoryIds,
             @Param("minPrice") BigDecimal minPrice,
             @Param("maxPrice") BigDecimal maxPrice,
+            Pageable pageable
+    );
+    // Lấy tất cả sản phẩm không filter status (admin)
+    @Query("""
+    SELECT new com.group1.shop_runner.dto.product.response.ProductResponse(
+        p.id, p.name, p.slug, p.description, b.name,
+        p.option1Name, p.option2Name, p.option3Name, p.status
+    )
+    FROM Product p
+    LEFT JOIN p.brand b
+""")
+    Page<ProductResponse> getProductsForAdmin(Pageable pageable);
+
+    //Filter cho admin
+    @Query(
+            value = """
+    SELECT DISTINCT new com.group1.shop_runner.dto.product.response.ProductResponse(
+        p.id, p.name, p.slug, p.description, b.name,
+        p.option1Name, p.option2Name, p.option3Name, p.status
+    )
+    FROM Product p
+    LEFT JOIN p.brand b
+    LEFT JOIN p.variants v
+    LEFT JOIN p.productCategories pc
+    WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
+           OR LOWER(b.name) LIKE LOWER(CONCAT('%', :name, '%'))
+           OR EXISTS (
+               SELECT 1 FROM ProductCategory pc2
+               JOIN pc2.category cat
+               WHERE pc2.product = p
+               AND LOWER(cat.name) LIKE LOWER(CONCAT('%', :name, '%'))
+           ))
+    AND (:brandIds IS NULL OR b.id IN :brandIds)
+    AND (:categoryIds IS NULL OR pc.category.id IN :categoryIds)
+    AND (:minPrice IS NULL OR v.price >= :minPrice)
+    AND (:maxPrice IS NULL OR v.price <= :maxPrice)
+    AND (:statuses IS NULL OR p.status IN :statuses)
+    """,
+            countQuery = """
+    SELECT COUNT(DISTINCT p.id)
+    FROM Product p
+    LEFT JOIN p.brand b
+    LEFT JOIN p.variants v
+    LEFT JOIN p.productCategories pc
+    WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
+           OR LOWER(b.name) LIKE LOWER(CONCAT('%', :name, '%'))
+           OR EXISTS (
+               SELECT 1 FROM ProductCategory pc2
+               JOIN pc2.category cat
+               WHERE pc2.product = p
+               AND LOWER(cat.name) LIKE LOWER(CONCAT('%', :name, '%'))
+           ))
+    AND (:brandIds IS NULL OR b.id IN :brandIds)
+    AND (:categoryIds IS NULL OR pc.category.id IN :categoryIds)
+    AND (:minPrice IS NULL OR v.price >= :minPrice)
+    AND (:maxPrice IS NULL OR v.price <= :maxPrice)
+    AND (:statuses IS NULL OR p.status IN :statuses)
+    """
+    )
+    Page<ProductResponse> filterProductsForAdmin(
+            @Param("name") String name,
+            @Param("brandIds") List<Long> brandIds,
+            @Param("categoryIds") List<Long> categoryIds,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("statuses") List<Product.Status> statuses,
             Pageable pageable
     );
 }
