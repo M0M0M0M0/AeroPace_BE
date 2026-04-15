@@ -269,7 +269,6 @@ public class OrderService {
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
 
-            // ✅ Đọc từ snapshot thay vì join
             itemResponse.setProductName(item.getProductName());
             itemResponse.setVariantName(item.getVariantName());
             itemResponse.setSku(item.getSku());
@@ -305,6 +304,6 @@ public class OrderService {
             parts.add(variant.getOption2Value());
         if (variant.getOption3Value() != null && !variant.getOption3Value().isBlank())
             parts.add(variant.getOption3Value());
-        return String.join(" / ", parts); // VD: "42 / Đỏ / Wide"
+        return String.join(" / ", parts);
     }
 }
