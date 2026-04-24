@@ -55,7 +55,6 @@ public class UserService {
         // =========================================
         if (saved.getRole() != null &&
                 saved.getRole().getName().equalsIgnoreCase("USER")) {
-            System.out.println("ROLE = " + saved.getRole().getName());
             CustomerProfile profile = new CustomerProfile();
 
             profile.setUser(saved);
