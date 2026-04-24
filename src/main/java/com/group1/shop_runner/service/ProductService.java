@@ -52,20 +52,7 @@ public class ProductService {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    // =========================================================
-    // API 1: GET /api/products
-    // Mục đích:
-    // - Lấy danh sách tất cả sản phẩm để hiển thị ngoài trang list
-    // - Chỉ trả về dữ liệu cần thiết: id, name, minPrice, image
-    // =========================================================
-//    @Transactional(readOnly = true)
-//    public List<ProductListResponse> getAllProducts() {
-//        List<Product> products = productRepository.findAll();
-//
-//        return products.stream()
-//                .map(this::mapToProductListResponse)
-//                .toList();
-//    }
+
 
     // =========================================================
     // API 2: GET /api/products/{id}
@@ -227,37 +214,7 @@ public class ProductService {
         }
     }
 
-    // =========================================================
-    // API 10: GET /api/products/category/{categoryId}
-    // Mục đích:
-    // - Lấy danh sách product theo category
-    // - Trả về kiểu ProductListResponse để hiển thị ngoài trang list
-    // =========================================================
-//    @Transactional(readOnly = true)
-//    public List<ProductListResponse> getProductsByCategory(Long categoryId) {
-//        List<ProductCategory> productCategories = productCategoryRepository.findByCategory_Id(categoryId);
-//
-//        return productCategories.stream()
-//                .map(ProductCategory::getProduct)
-//                .distinct()
-//                .map(this::mapToProductListResponse)
-//                .toList();
-//    }
 
-    // =========================================================
-    // MAPPER 1:
-    // Chuyển Product entity -> ProductListResponse
-    // Dùng cho API danh sách sản phẩm
-    // =========================================================
-//    private ProductListResponse mapToProductListResponse(Product product) {
-//        return new ProductListResponse(
-//                product.getId(),
-//                product.getName(),
-//                extractMinPrice(product),
-//                extractFirstImage(product),
-//                product.getBrand().getName()
-//        );
-//    }
 
     // =========================================================
     // MAPPER 2:
