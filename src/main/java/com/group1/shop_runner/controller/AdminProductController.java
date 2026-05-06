@@ -2,6 +2,7 @@ package com.group1.shop_runner.controller;
 
 import com.group1.shop_runner.dto.product.request.ProductRequest;
 import com.group1.shop_runner.dto.product.request.ProductVariantRequest;
+import com.group1.shop_runner.dto.product.response.BestSellerResponse;
 import com.group1.shop_runner.dto.product.response.ProductDetailResponse;
 import com.group1.shop_runner.dto.product.response.ProductResponse;
 import com.group1.shop_runner.dto.product.response.ProductVariantResponse;
@@ -9,9 +10,12 @@ import com.group1.shop_runner.entity.Product;
 import com.group1.shop_runner.service.ProductService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -174,5 +178,20 @@ public class AdminProductController {
     ) {
         productService.updateProductStatus(id, status);
         return "Update product status successfully";
+    }
+    // =========================================================
+    // ADMIN API 14: GET /api/v1/admin/products/best-sellers
+    // Mục đích:
+    // - Lay san pham ban chay
+    // =========================================================
+    @GetMapping("/best-sellers")
+    public ResponseEntity<List<BestSellerResponse>> getBestSellers(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        if (limit < 1 || limit > 100) limit = 10;
+        List<BestSellerResponse> result = productService.getBestSellers(dateFrom, dateTo, limit);
+        return ResponseEntity.ok(result);
     }
 }

@@ -5,6 +5,7 @@ import com.group1.shop_runner.dto.product.ProductImageDto;
 import com.group1.shop_runner.dto.product.ProductVariantDto;
 import com.group1.shop_runner.dto.product.request.ProductRequest;
 import com.group1.shop_runner.dto.product.request.ProductVariantRequest;
+import com.group1.shop_runner.dto.product.response.BestSellerResponse;
 import com.group1.shop_runner.dto.product.response.ProductDetailResponse;
 import com.group1.shop_runner.dto.product.response.ProductResponse;
 import com.group1.shop_runner.dto.product.response.ProductVariantResponse;
@@ -24,10 +25,9 @@ import com.group1.shop_runner.entity.Brand;
 
 
 import java.math.BigDecimal;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -513,5 +513,59 @@ public class ProductService {
                 "products", products,
                 "totalPages", productPage.getTotalPages()
         );
+
+    }
+    // 4.4 Admin: Lấy sản phẩm bán chạy nhất theo khoảng thời gian
+    @Transactional(readOnly = true)
+    public List<BestSellerResponse> getBestSellers(
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            int limit
+    ) {
+        // Chuyển LocalDate → LocalDateTime (đầu ngày / cuối ngày)
+        LocalDateTime from = dateFrom.atStartOfDay();
+        LocalDateTime to   = dateTo.atTime(23, 59, 59);
+
+        // 1. Query: lấy [productId, totalSold] sorted desc
+        List<Object[]> rows = orderItemRepository.findBestSellerProductIds(from, to, limit);
+
+        if (rows.isEmpty()) return List.of();
+
+        // 2. Giữ thứ tự và map totalSold
+        List<Long> productIds = rows.stream()
+                .map(r -> ((Number) r[0]).longValue())
+                .toList();
+
+        Map<Long, Long> soldMap = rows.stream()
+                .collect(Collectors.toMap(
+                        r -> ((Number) r[0]).longValue(),
+                        r -> ((Number) r[1]).longValue()
+                ));
+
+        // 3. Load đầy đủ thông tin product (dùng lại logic hiện có)
+        List<ProductResponse> products = getProductsByIds(productIds);
+
+        // 4. Map sang BestSellerResponse, giữ đúng thứ tự rank
+        return productIds.stream()
+                .map(pid -> {
+                    ProductResponse p = products.stream()
+                            .filter(pr -> pr.getId().equals(pid))
+                            .findFirst()
+                            .orElse(null);
+                    if (p == null) return null;
+
+                    BestSellerResponse dto = new BestSellerResponse();
+                    dto.setId(p.getId());
+                    dto.setName(p.getName());
+                    dto.setBrand(p.getBrand());
+                    dto.setStatus(p.getStatus() != null ? p.getStatus().name() : null);
+                    dto.setTotalSold(soldMap.get(pid));
+                    dto.setImages(p.getImages());
+                    dto.setVariants(p.getVariants());
+                    dto.setCategories(p.getCategories());
+                    return dto;
+                })
+                .filter(Objects::nonNull)
+                .toList();
     }
 }

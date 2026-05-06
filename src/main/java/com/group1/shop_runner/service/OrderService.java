@@ -185,6 +185,15 @@ public class OrderService {
 
         order.setStatus(newStatus);
         order.setUpdatedAt(LocalDateTime.now());
+        //hoan tra inventory
+        if (newStatus == OrderStatus.CANCELLED){
+            List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+            for (OrderItem item : items){
+                ProductVariant variant = item.getProductVariant();
+                variant.setStock(variant.getStock() +item.getQuantity());
+                productVariantRepository.save(variant);
+            }
+        }
 
         orderRepository.save(order);
     }
