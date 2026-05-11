@@ -116,7 +116,11 @@ public class OrderService {
             orderItem.setProductImgUrl(null);
             orderItem.setNote(null);
 
-            variant.setStock(variant.getStock() - quantity);
+            if (variant.getStock()>=quantity){
+                variant.setStock(variant.getStock() - quantity);
+            }else {
+                throw new AppException(ErrorCode.EXCEED_STOCK);
+            }
 
             orderItems.add(orderItem);
         }

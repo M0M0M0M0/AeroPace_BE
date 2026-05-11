@@ -20,6 +20,7 @@ public class CartItemResponse {
     private String option3Value;
     private BigDecimal price;
     private Integer quantity;
+    private Integer stockAvailable;
     private BigDecimal lineTotal;
     private String image;
     private Integer stock;

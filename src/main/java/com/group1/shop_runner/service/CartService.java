@@ -236,6 +236,7 @@ public class CartService {
                 variant.getOption3Value(),
                 variant.getPrice(),
                 cartItem.getQuantity(),
+                variant.getStock(),
                 lineTotal,
                 imageUrl,
                 variant.getStock()
