@@ -24,7 +24,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @Service
 public class OrderService {
 
@@ -182,7 +183,10 @@ public class OrderService {
     // =========================================================
     @Transactional
     public void updateOrderStatus(Integer orderId, OrderStatus newStatus, Authentication authentication) {
-        String currentUserEmail = authentication.getName();
+        String currentUsername = authentication.getName();
+        User currentUser = userRepository.findByUsername(currentUsername).orElseThrow();
+        String currentUserEmail = currentUser.getEmail();
+
         boolean isAdmin = authentication.getAuthorities()
                 .stream()
                 .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
