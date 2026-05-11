@@ -58,9 +58,9 @@ public class UserController {
     // API 5: Delete user
     // DELETE /api/v1/users/{id}
     // =========================================================
-    @DeleteMapping("/{id}")
-    public String deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
-        return "Delete user successfully";
-    }
+//    @DeleteMapping("/{id}")
+//    public String deleteUser(@PathVariable Long id) {
+//        userService.deleteUser(id);
+//        return "Delete user successfully";
+//    }
 }

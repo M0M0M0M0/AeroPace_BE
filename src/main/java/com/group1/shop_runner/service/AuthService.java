@@ -9,6 +9,8 @@ import com.group1.shop_runner.entity.User;
 import com.group1.shop_runner.repository.CustomerProfileRepository;
 import com.group1.shop_runner.repository.RoleRepository;
 import com.group1.shop_runner.repository.UserRepository;
+import com.group1.shop_runner.shared.exception.AppException;
+import com.group1.shop_runner.shared.exception.ErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -32,10 +34,10 @@ public class AuthService {
 
     public LoginResponse login(String email, String password) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+                .orElseThrow(() -> new AppException(ErrorCode.INVALID_EMAIL_OR_PASSWORD));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new RuntimeException("Invalid email or password");
+            throw new AppException(ErrorCode.INVALID_EMAIL_OR_PASSWORD);
         }
 
         String token = jwtUtil.generateToken(
@@ -55,11 +57,11 @@ public class AuthService {
 
         // Check username/email
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("Email already exists");
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already exists");
+            throw new AppException(ErrorCode.USERNAME_ALREADY_EXISTS);
         }
 
         Role userRole = roleRepository.findByName("USER")
