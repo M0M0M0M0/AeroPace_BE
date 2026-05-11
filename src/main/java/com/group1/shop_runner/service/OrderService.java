@@ -10,15 +10,13 @@ import com.group1.shop_runner.entity.OrderItem;
 import com.group1.shop_runner.entity.ProductVariant;
 import com.group1.shop_runner.entity.User;
 import com.group1.shop_runner.enums.OrderStatus;
-import com.group1.shop_runner.repository.ProductVariantRepository;
+import com.group1.shop_runner.repository.*;
 import com.group1.shop_runner.shared.exception.AppException;
 import com.group1.shop_runner.shared.exception.ErrorCode;
-import com.group1.shop_runner.repository.CartItemRepository;
-import com.group1.shop_runner.repository.OrderItemRepository;
-import com.group1.shop_runner.repository.OrderRepository;
 import com.group1.shop_runner.specification.OrderSpecification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +39,9 @@ public class OrderService {
 
     @Autowired
     private ProductVariantRepository productVariantRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     // =========================================================
     // API 1: Checkout
@@ -180,26 +181,43 @@ public class OrderService {
     // PUT /api/orders/{orderId}/status
     // =========================================================
     @Transactional
-    public void updateOrderStatus(Integer orderId, OrderStatus newStatus) {
+    public void updateOrderStatus(Integer orderId, OrderStatus newStatus, Authentication authentication) {
+        String currentUserEmail = authentication.getName();
+        boolean isAdmin = authentication.getAuthorities()
+                .stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        validateStatusTransition(order.getStatus(), newStatus);
-
-        order.setStatus(newStatus);
-        order.setUpdatedAt(LocalDateTime.now());
-        //hoan tra inventory
-        if (newStatus == OrderStatus.CANCELLED){
-            List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
-            for (OrderItem item : items){
-                ProductVariant variant = item.getProductVariant();
-                variant.setStock(variant.getStock() +item.getQuantity());
-                productVariantRepository.save(variant);
-            }
+        if(!isAdmin &&
+                ( newStatus != OrderStatus.CANCELLED
+                || order.getStatus() == OrderStatus.SHIPPING
+                || order.getStatus() == OrderStatus.DELIVERED
+                || order.getStatus() == OrderStatus.CANCELLED
+                )
+        ) {
+            throw new AppException(ErrorCode.INVALID_ORDER_STATUS_UPDATE);
         }
+        if (isAdmin || order.getUser().getEmail().equals(currentUserEmail)) {
+            validateStatusTransition(order.getStatus(), newStatus);
 
-        orderRepository.save(order);
+            order.setStatus(newStatus);
+            order.setUpdatedAt(LocalDateTime.now());
+            //hoan tra inventory
+            if (newStatus == OrderStatus.CANCELLED) {
+                List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+                for (OrderItem item : items) {
+                    ProductVariant variant = item.getProductVariant();
+                    variant.setStock(variant.getStock() + item.getQuantity());
+                    productVariantRepository.save(variant);
+                }
+            }
+
+            orderRepository.save(order);
+        }else {
+            throw new AppException(ErrorCode.ORDER_ACCESS_DENIED);
+        }
     }
     private void validateStatusTransition(OrderStatus current, OrderStatus next) {
         boolean valid = switch (current) {

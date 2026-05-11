@@ -7,13 +7,13 @@ import com.group1.shop_runner.entity.Order;
 import com.group1.shop_runner.enums.OrderStatus;
 import com.group1.shop_runner.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/orders")
-//@CrossOrigin(origins = "*")
 public class OrderController {
 
     @Autowired
@@ -62,9 +62,10 @@ public class OrderController {
     @PutMapping("/{orderId}/status")
     public void updateOrderStatus(
             @PathVariable Integer orderId,
-            @RequestParam OrderStatus status
+            @RequestParam OrderStatus status,
+            Authentication authentication
     ) {
-        orderService.updateOrderStatus(orderId, status);
+        orderService.updateOrderStatus(orderId, status, authentication);
     }
     // =========================================================
     // API 5: Cancel Order
