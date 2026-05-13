@@ -71,10 +71,16 @@ public class AdminProductController {
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(required = false) List<Product.Status> statuses,
+            @RequestParam(required = false) Long productId,
+            @RequestParam(required = false) Long variantId,
+            @RequestParam(required = false) String sku,
+            @RequestParam(required = false) Integer stockMin,
+            @RequestParam(required = false) Integer stockMax,
             @RequestParam(defaultValue = "0") int page
     ) {
         return productService.filterProductsForAdmin(
-                name, brands, categories, minPrice, maxPrice, statuses, page
+                name, brands, categories, minPrice, maxPrice, statuses,
+                productId, variantId, sku, stockMin, stockMax, page
         );
     }
 

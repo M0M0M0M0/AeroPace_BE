@@ -118,48 +118,82 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     //Filter cho admin
     @Query(
             value = """
-    SELECT DISTINCT new com.group1.shop_runner.dto.product.response.ProductResponse(
-        p.id, p.name, p.slug, p.description, b.name,
-        p.option1Name, p.option2Name, p.option3Name, p.status
-    )
-    FROM Product p
-    LEFT JOIN p.brand b
-    LEFT JOIN p.variants v
-    LEFT JOIN p.productCategories pc
-    WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
-           OR LOWER(b.name) LIKE LOWER(CONCAT('%', :name, '%'))
-           OR EXISTS (
-               SELECT 1 FROM ProductCategory pc2
-               JOIN pc2.category cat
-               WHERE pc2.product = p
-               AND LOWER(cat.name) LIKE LOWER(CONCAT('%', :name, '%'))
-           ))
-    AND (:brandIds IS NULL OR b.id IN :brandIds)
-    AND (:categoryIds IS NULL OR pc.category.id IN :categoryIds)
-    AND (:minPrice IS NULL OR v.price >= :minPrice)
-    AND (:maxPrice IS NULL OR v.price <= :maxPrice)
-    AND (:statuses IS NULL OR p.status IN :statuses)
-    """,
+SELECT DISTINCT new com.group1.shop_runner.dto.product.response.ProductResponse(
+    p.id, p.name, p.slug, p.description, b.name,
+    p.option1Name, p.option2Name, p.option3Name, p.status
+)
+FROM Product p
+LEFT JOIN p.brand b
+LEFT JOIN p.variants v
+LEFT JOIN p.productCategories pc
+WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
+       OR LOWER(b.name) LIKE LOWER(CONCAT('%', :name, '%'))
+       OR EXISTS (
+           SELECT 1 FROM ProductCategory pc2
+           JOIN pc2.category cat
+           WHERE pc2.product = p
+           AND LOWER(cat.name) LIKE LOWER(CONCAT('%', :name, '%'))
+       ))
+AND (:brandIds IS NULL OR b.id IN :brandIds)
+AND (:categoryIds IS NULL OR pc.category.id IN :categoryIds)
+AND (:minPrice IS NULL OR v.price >= :minPrice)
+AND (:maxPrice IS NULL OR v.price <= :maxPrice)
+AND (:statuses IS NULL OR p.status IN :statuses)
+AND (:productId IS NULL OR p.id = :productId)
+AND (:variantId IS NULL OR EXISTS (
+    SELECT 1 FROM ProductVariant pv
+    WHERE pv.product = p AND pv.id = :variantId
+))
+AND (:sku IS NULL OR EXISTS (
+    SELECT 1 FROM ProductVariant pv
+    WHERE pv.product = p AND LOWER(pv.sku) LIKE LOWER(CONCAT('%', :sku, '%'))
+))
+AND (:stockMin IS NULL OR (
+    SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
+    WHERE pv2.product = p AND pv2.isDeleted = false
+) >= :stockMin)
+AND (:stockMax IS NULL OR (
+    SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
+    WHERE pv2.product = p AND pv2.isDeleted = false
+) <= :stockMax)
+""",
             countQuery = """
-    SELECT COUNT(DISTINCT p.id)
-    FROM Product p
-    LEFT JOIN p.brand b
-    LEFT JOIN p.variants v
-    LEFT JOIN p.productCategories pc
-    WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
-           OR LOWER(b.name) LIKE LOWER(CONCAT('%', :name, '%'))
-           OR EXISTS (
-               SELECT 1 FROM ProductCategory pc2
-               JOIN pc2.category cat
-               WHERE pc2.product = p
-               AND LOWER(cat.name) LIKE LOWER(CONCAT('%', :name, '%'))
-           ))
-    AND (:brandIds IS NULL OR b.id IN :brandIds)
-    AND (:categoryIds IS NULL OR pc.category.id IN :categoryIds)
-    AND (:minPrice IS NULL OR v.price >= :minPrice)
-    AND (:maxPrice IS NULL OR v.price <= :maxPrice)
-    AND (:statuses IS NULL OR p.status IN :statuses)
-    """
+SELECT COUNT(DISTINCT p.id)
+FROM Product p
+LEFT JOIN p.brand b
+LEFT JOIN p.variants v
+LEFT JOIN p.productCategories pc
+WHERE (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
+       OR LOWER(b.name) LIKE LOWER(CONCAT('%', :name, '%'))
+       OR EXISTS (
+           SELECT 1 FROM ProductCategory pc2
+           JOIN pc2.category cat
+           WHERE pc2.product = p
+           AND LOWER(cat.name) LIKE LOWER(CONCAT('%', :name, '%'))
+       ))
+AND (:brandIds IS NULL OR b.id IN :brandIds)
+AND (:categoryIds IS NULL OR pc.category.id IN :categoryIds)
+AND (:minPrice IS NULL OR v.price >= :minPrice)
+AND (:maxPrice IS NULL OR v.price <= :maxPrice)
+AND (:statuses IS NULL OR p.status IN :statuses)
+AND (:productId IS NULL OR p.id = :productId)
+AND (:variantId IS NULL OR EXISTS (
+    SELECT 1 FROM ProductVariant pv
+    WHERE pv.product = p AND pv.id = :variantId
+))
+AND (:sku IS NULL OR EXISTS (
+    SELECT 1 FROM ProductVariant pv
+    WHERE pv.product = p AND LOWER(pv.sku) LIKE LOWER(CONCAT('%', :sku, '%'))
+))
+AND (:stockMin IS NULL OR (
+    SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
+    WHERE pv2.product = p AND pv2.isDeleted = false
+) >= :stockMin)
+AND (:stockMax IS NULL OR (
+    SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
+    WHERE pv2.product = p AND pv2.isDeleted = false
+) <= :stockMax)
+"""
     )
     Page<ProductResponse> filterProductsForAdmin(
             @Param("name") String name,
@@ -168,6 +202,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("minPrice") BigDecimal minPrice,
             @Param("maxPrice") BigDecimal maxPrice,
             @Param("statuses") List<Product.Status> statuses,
+            @Param("productId") Long productId,
+            @Param("variantId") Long variantId,
+            @Param("sku") String sku,
+            @Param("stockMin") Integer stockMin,
+            @Param("stockMax") Integer stockMax,
             Pageable pageable
     );
 }

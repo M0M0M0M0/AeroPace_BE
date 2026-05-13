@@ -477,6 +477,11 @@ public class ProductService {
             BigDecimal minPrice,
             BigDecimal maxPrice,
             List<Product.Status> statuses,
+            Long productId,
+            Long variantId,
+            String sku,
+            Integer stockMin,
+            Integer stockMax,
             int page
     ) {
         Pageable pageable = PageRequest.of(page, 20);
@@ -485,9 +490,11 @@ public class ProductService {
         if (categoryIds != null && categoryIds.isEmpty()) categoryIds = null;
         if (statuses != null && statuses.isEmpty()) statuses = null;
         if (name != null && name.isBlank()) name = null;
+        if (sku != null && sku.isBlank()) sku = null;
 
         Page<ProductResponse> productPage = productRepository.filterProductsForAdmin(
-                name, brandIds, categoryIds, minPrice, maxPrice, statuses, pageable
+                name, brandIds, categoryIds, minPrice, maxPrice, statuses,
+                productId, variantId, sku, stockMin, stockMax, pageable
         );
 
         List<ProductResponse> products = productPage.getContent();
