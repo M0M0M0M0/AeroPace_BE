@@ -11,6 +11,7 @@ import java.util.List;
 public interface OrderItemRepository extends JpaRepository<OrderItem, Integer> {
     List<OrderItem> findByOrderId(Integer orderId);
     boolean existsByProductVariantId(Long productVariantId);
+    boolean existsByProductVariant_Product_Id(Long productId);
     @Query("""
         SELECT pv.product.id, SUM(oi.quantity)
         FROM OrderItem oi

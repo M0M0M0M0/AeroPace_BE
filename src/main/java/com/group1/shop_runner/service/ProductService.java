@@ -23,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.group1.shop_runner.entity.Brand;
 
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -53,14 +52,12 @@ public class ProductService {
     private CategoryRepository categoryRepository;
 
 
-
-    // =========================================================
-    // API 2: GET /api/products/{id}
-    // Mục đích:
-    // - Lấy chi tiết 1 sản phẩm theo id
-    // - Trả về dữ liệu đầy đủ hơn cho trang detail:
-    //   id, name, description, minPrice, images, variants
-    // =========================================================
+    /**
+     * Lấy chi tiết một sản phẩm theo ID, bao gồm ảnh và danh sách variant còn active.
+     * Dùng cho trang product detail phía client.
+     *
+     * @throws AppException PRODUCT_NOT_FOUND nếu không tồn tại
+     */
     @Transactional(readOnly = true)
     public ProductDetailResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
@@ -69,12 +66,12 @@ public class ProductService {
         return mapToProductDetailResponse(product);
     }
 
-    // =========================================================
-    // API 3: GET /api/products/{id}/variants
-    // Mục đích:
-    // - Lấy danh sách variant của 1 product
-    // - Dùng khi frontend cần load riêng danh sách variant
-    // =========================================================
+    /**
+     * Lấy danh sách variant còn active của một product.
+     * Các variant đã soft-delete ({@code isDeleted = true}) bị loại khỏi kết quả.
+     *
+     * @throws AppException PRODUCT_NOT_FOUND nếu productId không tồn tại
+     */
     @Transactional(readOnly = true)
     public List<ProductVariantResponse> getVariantsByProduct(Long productId) {
         List<ProductVariant> variants = productVariantRepository.findByProduct_IdAndIsDeletedFalse(productId);
@@ -84,13 +81,12 @@ public class ProductService {
                 .toList();
     }
 
-    // =========================================================
-    // API 4: POST /api/products
-    // Mục đích:
-    // - Tạo mới 1 sản phẩm
-    // - Nhận dữ liệu từ ProductRequest
-    // - Trả về ProductDetailResponse sau khi lưu
-    // =========================================================
+    /**
+     * Tạo mới một product. Mặc định status là ACTIVE nếu request không truyền vào.
+     * Chưa bao gồm variant và ảnh — phải tạo riêng qua {@code createVariant}.
+     *
+     * @throws AppException BRAND_NOT_FOUND nếu brandId không hợp lệ
+     */
     public ProductDetailResponse createProduct(ProductRequest request) {
         Brand brand = brandRepository.findById(request.getBrandId())
                 .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND));
@@ -109,13 +105,11 @@ public class ProductService {
         return mapToProductDetailResponse(savedProduct);
     }
 
-    // =========================================================
-    // API 5: POST /api/products/variants
-    // Mục đích:
-    // - Tạo mới 1 variant cho product
-    // - Nhận dữ liệu từ ProductVariantRequest
-    // - Trả về ProductVariantResponse sau khi lưu
-    // =========================================================
+    /**
+     * Tạo mới một variant cho product đã tồn tại.
+     *
+     * @throws AppException PRODUCT_NOT_FOUND nếu productId không hợp lệ
+     */
     public ProductVariantResponse createVariant(ProductVariantRequest request) {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -134,12 +128,12 @@ public class ProductService {
         return mapToProductVariantResponse(savedVariant);
     }
 
-    // =========================================================
-    // API 6: PUT /api/products/{id}
-    // Mục đích:
-    // - Cập nhật thông tin product
-    // - Trả về dữ liệu product sau khi update
-    // =========================================================
+    /**
+     * Cập nhật thông tin product. Status DELETED phải đi qua {@code deleteProduct},
+     * không nên set trực tiếp ở đây để tránh bypass business rule xóa.
+     *
+     * @throws AppException PRODUCT_NOT_FOUND, BRAND_NOT_FOUND
+     */
     public ProductDetailResponse updateProduct(Long id, ProductRequest request) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -160,12 +154,11 @@ public class ProductService {
         return mapToProductDetailResponse(updatedProduct);
     }
 
-    // =========================================================
-    // API 7: PUT /api/products/variants/{id}
-    // Mục đích:
-    // - Cập nhật thông tin variant
-    // - Trả về dữ liệu variant sau khi update
-    // =========================================================
+    /**
+     * Cập nhật thông tin một variant (giá, tồn kho, SKU, options).
+     *
+     * @throws AppException VARIANT_NOT_FOUND nếu id không tồn tại
+     */
     public ProductVariantResponse updateVariant(Long id, ProductVariantRequest request) {
         ProductVariant variant = productVariantRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND));
@@ -182,30 +175,42 @@ public class ProductService {
         return mapToProductVariantResponse(updatedVariant);
     }
 
-    // =========================================================
-    // API 8: DELETE /api/products/{id}
-    // Mục đích:
-    // - Xóa 1 product theo id
-    // =========================================================
+    /**
+     * Xóa product theo chiến lược:
+     * <ul>
+     *   <li>Nếu product đã có order liên quan → soft delete (status = DELETED) để bảo toàn lịch sử đơn hàng.</li>
+     *   <li>Nếu chưa có order nào → hard delete hoàn toàn khỏi DB.</li>
+     * </ul>
+     *
+     * @throws AppException PRODUCT_NOT_FOUND nếu id không tồn tại
+     */
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
-
-        product.setStatus(Product.Status.DELETED);
-        productRepository.save(product);
+        List<ProductVariant> variants = productVariantRepository.findByProduct_IdAndIsDeletedFalse(id);
+        boolean hasOrder = orderItemRepository.existsByProductVariant_Product_Id(id);
+        if (hasOrder) {
+            product.setStatus(Product.Status.DELETED);
+            productRepository.save(product);
+        } else {
+            productRepository.delete(product);
+        }
     }
 
-    // =========================================================
-    // API 9: DELETE /api/products/variants/{id}
-    // Mục đích:
-    // - Xóa 1 variant theo id
-    // =========================================================
+    /**
+     * Xóa một variant theo chiến lược:
+     * <ul>
+     *   <li>Nếu variant đã xuất hiện trong order → soft delete ({@code isDeleted = true}).</li>
+     *   <li>Nếu chưa có order nào dùng variant này → hard delete.</li>
+     * </ul>
+     *
+     * @throws AppException VARIANT_NOT_FOUND nếu id không tồn tại
+     */
     public void deleteVariant(Long id) {
         ProductVariant variant = productVariantRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND));
 
         boolean hasOrder = orderItemRepository.existsByProductVariantId(id);
-        //check co order de quyet dinh solf/hard delete
         if (hasOrder) {
             variant.setIsDeleted(true);
             productVariantRepository.save(variant);
@@ -215,29 +220,28 @@ public class ProductService {
     }
 
 
-
-    // =========================================================
-    // MAPPER 2:
-    // Chuyển Product entity -> ProductDetailResponse
-    // Dùng cho API chi tiết sản phẩm
-    // =========================================================
+    /**
+     * Map Product entity sang ProductDetailResponse cho client.
+     * Variant đã soft-delete bị loại khỏi response — client không biết chúng tồn tại.
+     * Ảnh được sắp xếp theo {@code position}, null position xếp cuối.
+     */
     private ProductDetailResponse mapToProductDetailResponse(Product product) {
         List<String> images = product.getImages() == null
                 ? List.of()
                 : product.getImages().stream()
-                .sorted(Comparator.comparing(
-                        ProductImage::getPosition,
-                        Comparator.nullsLast(Integer::compareTo)
-                ))
-                .map(ProductImage::getImageUrl)
-                .toList();
+                  .sorted(Comparator.comparing(
+                          ProductImage::getPosition,
+                          Comparator.nullsLast(Integer::compareTo)
+                  ))
+                  .map(ProductImage::getImageUrl)
+                  .toList();
 
         List<ProductVariantResponse> variants = product.getVariants() == null
                 ? List.of()
                 : product.getVariants().stream()
-                .filter(v -> !Boolean.TRUE.equals(v.getIsDeleted()))
-                .map(this::mapToProductVariantResponse)
-                .toList();
+                  .filter(v -> !Boolean.TRUE.equals(v.getIsDeleted()))
+                  .map(this::mapToProductVariantResponse)
+                  .toList();
 
         return new ProductDetailResponse(
                 product.getId(),
@@ -250,10 +254,6 @@ public class ProductService {
         );
     }
 
-    // =========================================================
-    // MAPPER 3:
-    // Chuyển ProductVariant entity -> ProductVariantResponse
-    // =========================================================
     private ProductVariantResponse mapToProductVariantResponse(ProductVariant variant) {
         return new ProductVariantResponse(
                 variant.getId(),
@@ -265,11 +265,10 @@ public class ProductService {
         );
     }
 
-    // =========================================================
-    // HELPER 1:
-    // Lấy giá nhỏ nhất trong danh sách variant của product
-    // Nếu product chưa có variant thì trả về 0
-    // =========================================================
+    /**
+     * Tính giá thấp nhất trong các variant còn active.
+     * Trả về 0 nếu product chưa có variant hoặc tất cả đã bị xóa.
+     */
     private BigDecimal extractMinPrice(Product product) {
         if (product.getVariants() == null || product.getVariants().isEmpty()) {
             return BigDecimal.ZERO;
@@ -283,11 +282,6 @@ public class ProductService {
                 .orElse(BigDecimal.ZERO);
     }
 
-    // =========================================================
-    // HELPER 2:
-    // Lấy ảnh đầu tiên của product theo position
-    // Nếu chưa có ảnh thì trả về null
-    // =========================================================
     private String extractFirstImage(Product product) {
         if (product.getImages() == null || product.getImages().isEmpty()) {
             return null;
@@ -303,8 +297,11 @@ public class ProductService {
                 .orElse(null);
     }
 
-
-    // 3.1 Service: Lay 1 thong tin chi tiet san pham theo id
+    /**
+     * Lấy chi tiết một product cho client. Product có status DELETED bị coi là không tồn tại.
+     *
+     * @throws AppException PRODUCT_NOT_FOUND nếu không tìm thấy hoặc đã bị xóa
+     */
     public ProductResponse getProductDetail(Long id) {
         ProductResponse product = getProductsByIds(List.of(id))
                 .stream()
@@ -316,7 +313,15 @@ public class ProductService {
         }
         return product;
     }
-    // 3.2 Service: Lay nhieu thong tin chi tiet san pham theo list id
+
+    /**
+     * Batch-load nhiều product theo danh sách ID, kèm ảnh, variant và category.
+     * Dùng pattern N+1-safe: load tất cả sub-entities trong một lần query rồi assemble bằng Map.
+     * <p>
+     * Ném exception ngay nếu bất kỳ ID nào không tìm thấy — caller phải đảm bảo toàn bộ ID hợp lệ.
+     *
+     * @throws AppException PRODUCT_NOT_FOUND kèm danh sách ID thiếu
+     */
     public List<ProductResponse> getProductsByIds(List<Long> ids) {
 
         List<ProductResponse> products = productRepository.getProductsByIds(ids);
@@ -355,7 +360,11 @@ public class ProductService {
 
         return products;
     }
-    // 3.3 Service: Lấy All Product details
+
+    /**
+     * Lấy danh sách product phân trang cho client (chỉ hiển thị product active).
+     * Page size cố định 20.
+     */
     public Map<String, Object> getAllProductDetail(int page) {
         Pageable pageable = PageRequest.of(page, 20);
         Page<ProductResponse> productPage = productRepository.getProducts(pageable);
@@ -382,7 +391,12 @@ public class ProductService {
                 "totalPages", productPage.getTotalPages()
         );
     }
-    //3.4 lay product detail theo filter
+
+    /**
+     * Tìm kiếm và filter product cho client với nhiều tiêu chí kết hợp.
+     * List rỗng ({@code []}) cho brandIds/categoryIds được coi là "không lọc theo field đó" (tương đương null).
+     * Trả về map rỗng thay vì ném exception khi không có kết quả.
+     */
     @Transactional(readOnly = true)
     public Map<String, Object> filterProducts(
             String name,
@@ -394,6 +408,7 @@ public class ProductService {
     ) {
         Pageable pageable = PageRequest.of(page, 20);
 
+        // Normalize: list rỗng hoặc string blank → null để query không bị filter sai
         if (brandIds != null && brandIds.isEmpty()) brandIds = null;
         if (categoryIds != null && categoryIds.isEmpty()) categoryIds = null;
         if (name != null && name.isBlank()) name = null;
@@ -427,6 +442,13 @@ public class ProductService {
                 "totalPages", productPage.getTotalPages()
         );
     }
+
+    /**
+     * Cập nhật status của product trực tiếp (dùng cho các transition như ACTIVE ↔ INACTIVE).
+     * Không nên dùng để set DELETED — hãy dùng {@code deleteProduct} để đảm bảo business rule.
+     *
+     * @throws AppException PRODUCT_NOT_FOUND
+     */
     public void updateProductStatus(Long id, Product.Status status) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -434,14 +456,22 @@ public class ProductService {
         productRepository.save(product);
     }
 
-    // 4.1 Admin: Lấy chi tiết 1 sản phẩm theo id
+    /**
+     * Lấy chi tiết một product cho admin. Không filter theo status — admin thấy cả product đã DELETED.
+     *
+     * @throws AppException PRODUCT_NOT_FOUND nếu id không tồn tại
+     */
     public ProductResponse getProductDetailForAdmin(Long id) {
         return getProductsByIds(List.of(id))
                 .stream()
                 .findFirst()
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
     }
-    // 4.2 Admin: Lấy tất cả sản phẩm
+
+    /**
+     * Lấy toàn bộ product phân trang cho admin, bao gồm cả product đã DELETED.
+     * Page size cố định 20.
+     */
     public Map<String, Object> getAllProductDetailForAdmin(int page) {
         Pageable pageable = PageRequest.of(page, 20);
         Page<ProductResponse> productPage = productRepository.getProductsForAdmin(pageable);
@@ -468,7 +498,11 @@ public class ProductService {
         );
     }
 
-    // 4.3 Admin: Filter sản phẩm
+    /**
+     * Filter product cho admin với bộ tiêu chí mở rộng hơn client, bao gồm:
+     * status, productId, variantId, SKU, khoảng tồn kho.
+     * List rỗng được normalize về null để tránh lọc nhầm.
+     */
     @Transactional(readOnly = true)
     public Map<String, Object> filterProductsForAdmin(
             String name,
@@ -520,25 +554,32 @@ public class ProductService {
                 "products", products,
                 "totalPages", productPage.getTotalPages()
         );
-
     }
-    // 4.4 Admin: Lấy sản phẩm bán chạy nhất theo khoảng thời gian
+
+    /**
+     * Lấy danh sách sản phẩm bán chạy nhất trong khoảng thời gian cho trước.
+     * Kết quả được sắp xếp theo tổng số lượng bán giảm dần, giới hạn bởi {@code limit}.
+     * <p>
+     * Thứ tự rank từ query được bảo toàn qua toàn bộ pipeline (productIds → soldMap → kết quả cuối).
+     * Product không còn tồn tại trong DB sẽ bị bỏ qua thay vì ném exception.
+     *
+     * @param dateFrom ngày bắt đầu (inclusive)
+     * @param dateTo   ngày kết thúc (inclusive, tính đến 23:59:59)
+     * @param limit    số lượng sản phẩm tối đa trả về
+     */
     @Transactional(readOnly = true)
     public List<BestSellerResponse> getBestSellers(
             LocalDate dateFrom,
             LocalDate dateTo,
             int limit
     ) {
-        // Chuyển LocalDate → LocalDateTime (đầu ngày / cuối ngày)
         LocalDateTime from = dateFrom.atStartOfDay();
         LocalDateTime to   = dateTo.atTime(23, 59, 59);
 
-        // 1. Query: lấy [productId, totalSold] sorted desc
         List<Object[]> rows = orderItemRepository.findBestSellerProductIds(from, to, limit);
 
         if (rows.isEmpty()) return List.of();
 
-        // 2. Giữ thứ tự và map totalSold
         List<Long> productIds = rows.stream()
                 .map(r -> ((Number) r[0]).longValue())
                 .toList();
@@ -549,10 +590,9 @@ public class ProductService {
                         r -> ((Number) r[1]).longValue()
                 ));
 
-        // 3. Load đầy đủ thông tin product (dùng lại logic hiện có)
         List<ProductResponse> products = getProductsByIds(productIds);
 
-        // 4. Map sang BestSellerResponse, giữ đúng thứ tự rank
+        // Giữ đúng thứ tự rank từ query — không sort lại ở đây
         return productIds.stream()
                 .map(pid -> {
                     ProductResponse p = products.stream()

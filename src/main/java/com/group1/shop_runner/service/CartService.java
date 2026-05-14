@@ -30,9 +30,11 @@ public class CartService {
     @Autowired
     private UserRepository userRepository;
 
-    // =========================
-    // GET CART (USER ONLY)
-    // =========================
+    /**
+     * Lấy toàn bộ giỏ hàng của user, bao gồm tổng số lượng và tổng tiền tính theo giá hiện tại.
+     *
+     * @throws AppException USER_NOT_FOUND
+     */
     @Transactional(readOnly = true)
     public CartResponse getCart(Long userId) {
         User user = userRepository.findById(userId)
@@ -42,9 +44,16 @@ public class CartService {
         return mapToCartResponse(user, cartItems);
     }
 
-    // =========================
-    // ADD TO CART (USER ONLY)
-    // =========================
+    /**
+     * Thêm sản phẩm vào giỏ hàng. Hỗ trợ hai cách truyền vào:
+     * - {@code productVariantId}: chọn đúng variant cụ thể.
+     * - {@code productId}: tự động chọn variant đầu tiên còn active (dùng cho product không có option).
+     * <p>
+     * Nếu item đã tồn tại trong cart, số lượng được cộng dồn thay vì tạo mới.
+     * Tổng số lượng sau khi cộng không được vượt quá tồn kho hiện tại.
+     *
+     * @throws AppException PRODUCT_NOT_FOUND, OUT_OF_STOCK, EXCEED_STOCK, INVALID_REQUEST
+     */
     @Transactional
     public CartResponse addToCart(Long userId, AddToCartRequest request) {
         User user = userRepository.findById(userId)
@@ -56,12 +65,14 @@ public class CartService {
             variant = productVariantRepository.findById(request.getProductVariantId())
                     .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         } else if (request.getProductId() != null) {
+            // Fallback: lấy variant đầu tiên còn active, dùng cho sản phẩm không có lựa chọn
             variant = productVariantRepository
                     .findFirstByProductIdAndIsDeletedFalseOrderByIdAsc(request.getProductId())
                     .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         } else {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
+
         if (variant.getStock() <= 0) {
             throw new AppException(ErrorCode.OUT_OF_STOCK);
         }
@@ -95,17 +106,22 @@ public class CartService {
         return mapToCartResponse(user, cartItems);
     }
 
-    // =========================
-    // UPDATE ITEM
-    // =========================
+    /**
+     * Cập nhật số lượng của một cart item. Số lượng mới không được vượt tồn kho hiện tại.
+     * Không hỗ trợ set quantity = 0 để xóa — dùng {@code removeCartItem} thay thế.
+     *
+     * @throws AppException CART_ITEM_NOT_FOUND, EXCEED_STOCK
+     */
     @Transactional
     public CartResponse updateCartItemQuantity(Long cartItemId, UpdateCartItemRequest request) {
         CartItem cartItem = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new AppException(ErrorCode.CART_ITEM_NOT_FOUND));
+
         ProductVariant variant = cartItem.getProductVariant();
         if (request.getQuantity() > variant.getStock()) {
             throw new AppException(ErrorCode.EXCEED_STOCK);
         }
+
         cartItem.setQuantity(request.getQuantity());
         cartItem.setUpdatedAt(LocalDateTime.now());
         cartItemRepository.save(cartItem);
@@ -114,9 +130,11 @@ public class CartService {
         return mapToCartResponse(cartItem.getUser(), cartItems);
     }
 
-    // =========================
-    // REMOVE ITEM
-    // =========================
+    /**
+     * Xóa một item khỏi giỏ hàng và trả về cart sau khi đã xóa.
+     *
+     * @throws AppException CART_ITEM_NOT_FOUND
+     */
     @Transactional
     public CartResponse removeCartItem(Long cartItemId) {
         CartItem cartItem = cartItemRepository.findById(cartItemId)
@@ -129,9 +147,11 @@ public class CartService {
         return mapToCartResponse(user, cartItems);
     }
 
-    // =========================
-    // CLEAR CART
-    // =========================
+    /**
+     * Xóa toàn bộ cart của user. Được gọi sau checkout hoặc khi user chủ động clear giỏ.
+     *
+     * @throws AppException USER_NOT_FOUND
+     */
     @Transactional
     public void clearCart(Long userId) {
         userRepository.findById(userId)
@@ -140,9 +160,16 @@ public class CartService {
         cartItemRepository.deleteByUserId(userId);
     }
 
-    // =========================
-    // MERGE CART (localStorage → DB khi login)
-    // =========================
+    /**
+     * Merge giỏ hàng từ localStorage (guest) vào cart DB sau khi user đăng nhập.
+     * Chiến lược merge:
+     * - Item đã tồn tại trong DB: cộng dồn số lượng, nhưng cap theo stock hiện tại để tránh over-order.
+     * - Item chưa có: tạo mới với quantity cap theo stock.
+     * - Variant không còn tồn tại hoặc bị xóa: bỏ qua thay vì ném exception, tránh block toàn bộ flow merge.
+     *
+     * @param guestItems danh sách item từ localStorage phía client
+     * @throws AppException USER_NOT_FOUND
+     */
     @Transactional
     public CartResponse mergeCart(Long userId, List<AddToCartRequest> guestItems) {
         User user = userRepository.findById(userId)
@@ -152,8 +179,7 @@ public class CartService {
             ProductVariant variant;
 
             if (item.getProductVariantId() != null) {
-                variant = productVariantRepository.findById(item.getProductVariantId())
-                        .orElse(null);
+                variant = productVariantRepository.findById(item.getProductVariantId()).orElse(null);
             } else if (item.getProductId() != null) {
                 variant = productVariantRepository
                         .findFirstByProductIdAndIsDeletedFalseOrderByIdAsc(item.getProductId())
@@ -188,9 +214,10 @@ public class CartService {
         return mapToCartResponse(user, cartItems);
     }
 
-    // =========================
-    // MAPPER
-    // =========================
+    /**
+     * Tính tổng số lượng, tổng tiền theo giá hiện tại của variant (không phải giá tại thời điểm thêm vào cart).
+     * Giá có thể thay đổi giữa lúc thêm vào cart và lúc xem lại — đây là behavior có chủ đích.
+     */
     private CartResponse mapToCartResponse(User user, List<CartItem> cartItems) {
         List<CartItemResponse> itemResponses = cartItems.stream()
                 .map(this::mapToCartItemResponse)
@@ -213,6 +240,10 @@ public class CartService {
         );
     }
 
+    /**
+     * Lấy ảnh đầu tiên của product theo position để hiển thị thumbnail trong cart.
+     * Position null xếp về 0 thay vì cuối để tránh ảnh không có position bị ẩn.
+     */
     private CartItemResponse mapToCartItemResponse(CartItem cartItem) {
         ProductVariant variant = cartItem.getProductVariant();
 
