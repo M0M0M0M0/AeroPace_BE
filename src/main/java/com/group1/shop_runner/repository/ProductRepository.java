@@ -14,7 +14,7 @@ import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findBySlug(String slug);
-
+    boolean existsBySlug(String slug);
     @Query("""
     SELECT new com.group1.shop_runner.dto.product.response.ProductResponse(
         p.id,

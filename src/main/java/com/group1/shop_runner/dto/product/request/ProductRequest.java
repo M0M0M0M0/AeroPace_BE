@@ -15,6 +15,7 @@ public class ProductRequest {
     private String description;
     @NotNull(message = "Brand is required")
     private Long brandId;
+    private String slug;
     private String option1Name;
     private String option2Name;
     private String option3Name;

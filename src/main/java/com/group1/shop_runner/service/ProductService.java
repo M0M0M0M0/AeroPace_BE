@@ -95,6 +95,11 @@ public class ProductService {
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setBrand(brand);
+        product.setSlug(
+                request.getSlug() != null && !request.getSlug().isBlank()
+                        ? request.getSlug()
+                        : generateSlug(request.getName())
+        );
         product.setOption1Name(request.getOption1Name());
         product.setOption2Name(request.getOption2Name());
         product.setOption3Name(request.getOption3Name());
@@ -103,6 +108,29 @@ public class ProductService {
         Product savedProduct = productRepository.save(product);
 
         return mapToProductDetailResponse(savedProduct);
+    }
+
+    private String generateSlug(String name) {
+        String slug = name.toLowerCase()
+                .replaceAll("[àáạảãâầấậẩẫăằắặẳẵ]", "a")
+                .replaceAll("[èéẹẻẽêềếệểễ]", "e")
+                .replaceAll("[ìíịỉĩ]", "i")
+                .replaceAll("[òóọỏõôồốộổỗơờớợởỡ]", "o")
+                .replaceAll("[ùúụủũưừứựửữ]", "u")
+                .replaceAll("[ỳýỵỷỹ]", "y")
+                .replaceAll("[đ]", "d")
+                .replaceAll("[^a-z0-9\\s-]", "")
+                .replaceAll("\\s+", "-")
+                .replaceAll("-+", "-")
+                .trim();
+
+        // Tránh slug trùng nhau
+        String baseSlug = slug;
+        int count = 1;
+        while (productRepository.existsBySlug(slug)) {
+            slug = baseSlug + "-" + count++;
+        }
+        return slug;
     }
 
     /**
