@@ -41,6 +41,9 @@ public class OrderService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ShippingMethodRepository shippingMethodRepository;
+
     /**
      * Tạo đơn hàng từ toàn bộ cart của user.
      * Flow: validate input → tạo Order rỗng → duyệt cart → trừ stock → lưu OrderItem → xóa cart.
@@ -153,6 +156,7 @@ public class OrderService {
 
         order.setTotalPrice(total);
         order.setUpdatedAt(LocalDateTime.now());
+
         order = orderRepository.save(order);
 
         cartItemRepository.deleteByUserId(request.getUserId());
@@ -203,7 +207,6 @@ public class OrderService {
     /**
      * Cập nhật trạng thái đơn hàng với phân quyền theo role:
      * - Admin: được phép thực hiện mọi transition hợp lệ.
-     * - User thường: chỉ được CANCEL đơn của chính mình, và chỉ khi đơn chưa SHIPPING/DELIVERED/CANCELLED.
      * <p>
      * Side effect khi CANCEL: hoàn trả stock về tất cả variant trong đơn.
      *
@@ -212,9 +215,6 @@ public class OrderService {
      */
     @Transactional
     public void updateOrderStatus(Integer orderId, OrderStatus newStatus, Authentication authentication) {
-        String currentUsername = authentication.getName();
-        User currentUser = userRepository.findByUsername(currentUsername).orElseThrow();
-        String currentUserEmail = currentUser.getEmail();
 
         boolean isAdmin = authentication.getAuthorities()
                 .stream()
@@ -223,17 +223,8 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        // User thường chỉ được cancel, và không được cancel đơn đang/đã xử lý
-        if (!isAdmin &&
-                (newStatus != OrderStatus.CANCELLED
-                        || order.getStatus() == OrderStatus.SHIPPING
-                        || order.getStatus() == OrderStatus.DELIVERED
-                        || order.getStatus() == OrderStatus.CANCELLED)
-        ) {
-            throw new AppException(ErrorCode.INVALID_ORDER_STATUS_UPDATE);
-        }
 
-        if (isAdmin || order.getUser().getEmail().equals(currentUserEmail)) {
+        if (isAdmin) {
             validateStatusTransition(order.getStatus(), newStatus);
 
             order.setStatus(newStatus);
@@ -277,22 +268,38 @@ public class OrderService {
     }
 
     /**
-     * Hủy đơn hàng — shortcut không cần authentication, dùng cho luồng user tự hủy từ client.
-     * Không hoàn trả stock ở đây — nếu cần hoàn stock khi user hủy, dùng {@code updateOrderStatus}.
+     * Hủy đơn hàng — cần authentication, dùng cho luồng user tự hủy từ client.
      *
      * @throws AppException ORDER_NOT_FOUND, INVALID_STATUS_TRANSITION
      */
     @Transactional
-    public void cancelOrder(Integer orderId) {
+    public void cancelOrder(Integer orderId, Authentication authentication) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        validateStatusTransition(order.getStatus(), OrderStatus.CANCELLED);
+        String currentUsername = authentication.getName();
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow( () -> new AppException(ErrorCode.USER_NOT_FOUND));
+        String currentUserEmail = currentUser.getEmail();
 
-        order.setStatus(OrderStatus.CANCELLED);
-        order.setUpdatedAt(LocalDateTime.now());
+        if(order.getUser().getEmail().equals(currentUserEmail)
+                && (    order.getStatus() == OrderStatus.SHIPPING
+                        || order.getStatus() == OrderStatus.DELIVERED
+                        || order.getStatus() == OrderStatus.CANCELLED))
+        {
+            validateStatusTransition(order.getStatus(), OrderStatus.CANCELLED);
+            order.setStatus(OrderStatus.CANCELLED);
+            //hoan stock
+            List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+            for (OrderItem item : items) {
+                ProductVariant variant = item.getProductVariant();
+                variant.setStock(variant.getStock() + item.getQuantity());
+                productVariantRepository.save(variant);
+            }
+            order.setUpdatedAt(LocalDateTime.now());
 
-        orderRepository.save(order);
+            orderRepository.save(order);
+        }
     }
 
     /**

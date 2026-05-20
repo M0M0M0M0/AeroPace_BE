@@ -56,39 +56,14 @@ public class OrderController {
         return orderService.getOrderById(orderId);
     }
     // =========================================================
-    // API 4: Update Order Status
-    // PUT /api/orders/{orderId}/status
-    // =========================================================
-    @PutMapping("/{orderId}/status")
-    public void updateOrderStatus(
-            @PathVariable Integer orderId,
-            @RequestParam OrderStatus status,
-            Authentication authentication
-    ) {
-        orderService.updateOrderStatus(orderId, status, authentication);
-    }
+
     // =========================================================
     // API 5: Cancel Order
     // PUT /api/orders/{orderId}/cancel
     // =========================================================
     @PutMapping("/{orderId}/cancel")
-    public void cancelOrder(@PathVariable Integer orderId) {
-        orderService.cancelOrder(orderId);
+    public void cancelOrder(@PathVariable Integer orderId, Authentication authentication) {
+        orderService.cancelOrder(orderId, authentication);
     }
-    // API 6: Lấy tất cả đơn hàng (Admin)
-    // GET /api/v1/orders
-    @GetMapping
-    public List<OrderListResponse> getAllOrders(
-            @RequestParam(required = false) String id,
-            @RequestParam(required = false) String receiverName,
-            @RequestParam(required = false) String phoneNumber,
-            @RequestParam(required = false) String shippingAddress,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) String dateFrom,
-            @RequestParam(required = false) String dateTo
-    ) {
-        return orderService.getAllOrders(
-                id, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo
-        );
-    }
+
 }

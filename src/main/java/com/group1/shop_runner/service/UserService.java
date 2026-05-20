@@ -116,15 +116,7 @@ public class UserService {
         return mapToResponse(updated);
     }
 
-    // =========================================================
-    // API 5: Delete user
-    // =========================================================
-//    public void deleteUser(Long id) {
-//        User user = userRepository.findById(id)
-//                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-//
-//        userRepository.delete(user);
-//    }
+
 
     private UserResponse mapToResponse(User user) {
         return new UserResponse(
