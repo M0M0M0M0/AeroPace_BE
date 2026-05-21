@@ -11,11 +11,15 @@ import java.util.List;
 @Getter
 @Setter
 public class OrderDetailResponse {
-    private Integer id;
+    private Long id;
     private Long userId;
+    private String username;
     private BigDecimal totalPrice;
     private OrderStatus status;
     private String shippingAddress;
+    private String ward;
+    private String district;
+    private String province;
     private String phoneNumber;
     private String receiverName;
     private String note;

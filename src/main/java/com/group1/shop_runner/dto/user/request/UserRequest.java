@@ -19,4 +19,9 @@ public class UserRequest {
 
     @NotNull(message = "Role is required")
     private Long roleId;
+
+    private String ward;
+    private String district;
+    private String province;
+
 }

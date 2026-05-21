@@ -16,6 +16,9 @@ public class CustomerProfileResponse {
     private String email;
     private String fullName;
     private String address;
+    private String ward;
+    private String district;
+    private String province;
     private LocalDate dob;
     private String phoneNumber;
     private String gender;

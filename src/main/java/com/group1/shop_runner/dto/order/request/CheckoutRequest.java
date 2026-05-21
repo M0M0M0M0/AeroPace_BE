@@ -12,4 +12,7 @@ public class CheckoutRequest {
     private String paymentMethod;
     private String receiverName;
     private String note;
+    private String ward;
+    private String district;
+    private String province;
 }

@@ -46,4 +46,13 @@ public class CustomerProfile {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "ward", length = 150)
+    private String ward;
+
+    @Column(name = "district", length = 150)
+    private String district;
+
+    @Column(name = "province", length = 150)
+    private String province;
 }

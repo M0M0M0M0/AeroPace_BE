@@ -15,6 +15,9 @@ public class CustomerProfileMapper {
                 profile.getUser().getEmail(),
                 profile.getFullName(),
                 profile.getAddress(),
+                profile.getProvince(),
+                profile.getWard(),
+                profile.getDistrict(),
                 profile.getDob(),
                 profile.getPhoneNumber(),
                 profile.getGender()

@@ -11,6 +11,9 @@ public class CustomerProfileRequest {
     private Long userId;
     private String fullName;
     private String address;
+    private String ward;
+    private String district;
+    private String province;
     @Past(message = "DOB must be in the past")
     private LocalDate dob;
     @Pattern(regexp = "^[0-9]+$", message = "Phone must be numeric")

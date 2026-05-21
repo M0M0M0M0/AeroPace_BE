@@ -8,8 +8,8 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface OrderItemRepository extends JpaRepository<OrderItem, Integer> {
-    List<OrderItem> findByOrderId(Integer orderId);
+public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
+    List<OrderItem> findByOrderId(Long orderId);
     boolean existsByProductVariantId(Long productVariantId);
     boolean existsByProductVariant_Product_Id(Long productId);
     @Query("""

@@ -91,6 +91,9 @@ public class OrderService {
         order.setCreatedAt(LocalDateTime.now());
         order.setUpdatedAt(LocalDateTime.now());
         order.setTotalPrice(BigDecimal.ZERO);
+        order.setWard(request.getWard());
+        order.setDistrict(request.getDistrict());
+        order.setProvince(request.getProvince());
 
         // Save trước để có orderId cho OrderItem FK
         order = orderRepository.save(order);
@@ -136,7 +139,12 @@ public class OrderService {
             orderItem.setProductName(variant.getProduct().getName());
             orderItem.setVariantName(buildVariantName(variant));
             orderItem.setSku(variant.getSku() != null ? variant.getSku() : "");
-            orderItem.setProductImgUrl(null);
+            orderItem.setProductImgUrl(variant.getProduct().getImages()
+                    .stream()
+                    .filter(img->img.getPosition()==1)
+                    .map(ProductImage::getImageUrl)
+                    .findFirst()
+                    .orElse(null));
             orderItem.setNote(null);
 
             if (variant.getStock() >= quantity) {
@@ -191,7 +199,7 @@ public class OrderService {
      * @throws AppException ORDER_NOT_FOUND
      */
     @Transactional(readOnly = true)
-    public OrderDetailResponse getOrderById(Integer orderId) {
+    public OrderDetailResponse getOrderById(Long orderId) {
         if (orderId == null) {
             throw new AppException(ErrorCode.INVALID_INPUT);
         }
@@ -210,40 +218,30 @@ public class OrderService {
      * <p>
      * Side effect khi CANCEL: hoàn trả stock về tất cả variant trong đơn.
      *
-     * @param authentication thông tin người dùng hiện tại để xác định quyền và ownership
      * @throws AppException ORDER_NOT_FOUND, INVALID_ORDER_STATUS_UPDATE, ORDER_ACCESS_DENIED, INVALID_STATUS_TRANSITION
      */
     @Transactional
-    public void updateOrderStatus(Integer orderId, OrderStatus newStatus, Authentication authentication) {
-
-        boolean isAdmin = authentication.getAuthorities()
-                .stream()
-                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+    public void updateOrderStatus(Long orderId, OrderStatus newStatus, String reason) {
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
+        validateStatusTransition(order.getStatus(), newStatus);
 
-        if (isAdmin) {
-            validateStatusTransition(order.getStatus(), newStatus);
+        order.setStatus(newStatus);
+        order.setUpdatedAt(LocalDateTime.now());
 
-            order.setStatus(newStatus);
-            order.setUpdatedAt(LocalDateTime.now());
-
-            // Hoàn trả stock khi hủy đơn
-            if (newStatus == OrderStatus.CANCELLED) {
-                List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
-                for (OrderItem item : items) {
-                    ProductVariant variant = item.getProductVariant();
-                    variant.setStock(variant.getStock() + item.getQuantity());
-                    productVariantRepository.save(variant);
-                }
+        if (newStatus == OrderStatus.CANCELLED) {
+            order.setCancelReason(reason);
+            List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+            for (OrderItem item : items) {
+                ProductVariant variant = item.getProductVariant();
+                variant.setStock(variant.getStock() + item.getQuantity());
+                productVariantRepository.save(variant);
             }
-
-            orderRepository.save(order);
-        } else {
-            throw new AppException(ErrorCode.ORDER_ACCESS_DENIED);
         }
+
+        orderRepository.save(order);
     }
 
     /**
@@ -273,7 +271,7 @@ public class OrderService {
      * @throws AppException ORDER_NOT_FOUND, INVALID_STATUS_TRANSITION
      */
     @Transactional
-    public void cancelOrder(Integer orderId, Authentication authentication) {
+    public void cancelOrder(Long orderId, Authentication authentication) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
@@ -325,7 +323,9 @@ public class OrderService {
             itemResponse.setProductName(item.getProductName());
             itemResponse.setVariantName(item.getVariantName());
             itemResponse.setSku(item.getSku());
+
             itemResponse.setProductImgUrl(item.getProductImgUrl());
+
             itemResponse.setNote(item.getNote());
             return itemResponse;
         }).toList();
@@ -337,10 +337,13 @@ public class OrderService {
     private OrderDetailResponse mapToOrderDetailResponse(Order order, List<OrderItem> orderItems) {
         OrderDetailResponse response = new OrderDetailResponse();
         response.setId(order.getId());
-        response.setUserId(order.getUser().getId());
+        response.setUsername(order.getUser().getUsername());
         response.setTotalPrice(order.getTotalPrice());
         response.setStatus(order.getStatus());
         response.setShippingAddress(order.getShippingAddress());
+        response.setWard(order.getWard());
+        response.setDistrict(order.getDistrict());
+        response.setProvince(order.getProvince());
         response.setPhoneNumber(order.getPhoneNumber());
         response.setReceiverName(order.getReceiverName());
         response.setNote(order.getNote());
@@ -396,5 +399,44 @@ public class OrderService {
         if (variant.getOption3Value() != null && !variant.getOption3Value().isBlank())
             parts.add(variant.getOption3Value());
         return String.join(" / ", parts);
+    }
+
+//    lay order detail cho admin
+    public OrderDetailResponse getOrderDetail(Long id){
+        OrderDetailResponse response = new OrderDetailResponse();
+        Order order = orderRepository.findById(id)
+                .orElseThrow(()-> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        response.setId(id);
+        response.setUserId(order.getUser().getId());
+        response.setUsername(order.getUser().getUsername());
+        response.setTotalPrice(order.getTotalPrice());
+        response.setStatus(order.getStatus());
+        response.setShippingAddress(order.getShippingAddress());
+        response.setWard(order.getWard());
+        response.setDistrict(order.getDistrict());
+        response.setProvince(order.getProvince());
+        response.setPhoneNumber(order.getPhoneNumber());
+        response.setReceiverName(order.getReceiverName());
+        response.setNote(order.getNote());
+        response.setCreatedAt(order.getCreatedAt());
+
+        List<OrderItem> orderItems = orderItemRepository.findByOrderId(id);
+        List<OrderItemResponse> itemResponses = orderItems.stream().map(item -> {
+            OrderItemResponse itemResponse = new OrderItemResponse();
+            itemResponse.setProductVariantId(Math.toIntExact(item.getProductVariant().getId()));
+            itemResponse.setQuantity(item.getQuantity());
+            itemResponse.setPrice(item.getPrice());
+            itemResponse.setProductName(item.getProductName());
+            itemResponse.setVariantName(item.getVariantName());
+            itemResponse.setSku(item.getSku());
+
+            itemResponse.setProductImgUrl(item.getProductImgUrl());
+
+            itemResponse.setNote(item.getNote());
+            return itemResponse;
+        }).toList();
+        response.setItems(itemResponses);
+
+        return response;
     }
 }

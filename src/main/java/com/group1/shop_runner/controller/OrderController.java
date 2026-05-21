@@ -52,7 +52,7 @@ public class OrderController {
     // - Bao gồm danh sách OrderItem
     // =========================================================
     @GetMapping("/{orderId}")
-    public OrderDetailResponse getOrderById(@PathVariable Integer orderId) {
+    public OrderDetailResponse getOrderById(@PathVariable Long orderId) {
         return orderService.getOrderById(orderId);
     }
     // =========================================================
@@ -62,7 +62,7 @@ public class OrderController {
     // PUT /api/orders/{orderId}/cancel
     // =========================================================
     @PutMapping("/{orderId}/cancel")
-    public void cancelOrder(@PathVariable Integer orderId, Authentication authentication) {
+    public void cancelOrder(@PathVariable Long orderId, Authentication authentication) {
         orderService.cancelOrder(orderId, authentication);
     }
 

@@ -11,7 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 public class OrderListResponse {
-    private Integer id;
+    private Long id;
     private BigDecimal totalPrice;
     private OrderStatus status;
     private String shippingAddress;

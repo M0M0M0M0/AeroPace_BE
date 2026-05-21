@@ -1,5 +1,6 @@
 package com.group1.shop_runner.controller;
 
+import com.group1.shop_runner.dto.order.response.OrderDetailResponse;
 import com.group1.shop_runner.dto.order.response.OrderListResponse;
 import com.group1.shop_runner.enums.OrderStatus;
 import com.group1.shop_runner.service.OrderService;
@@ -8,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/admin/orders")
@@ -32,10 +34,16 @@ public class AdminOrderController {
     //update order status
     @PutMapping("/{orderId}/status")
     public void updateOrderStatus(
-            @PathVariable Integer orderId,
+            @PathVariable Long orderId,
             @RequestParam OrderStatus status,
-            Authentication authentication
+            @RequestBody(required = false) Map<String, String> body
     ) {
-        orderService.updateOrderStatus(orderId, status, authentication);
+        String reason = body != null ? body.get("reason") : null;
+        orderService.updateOrderStatus(orderId, status, reason);
+    }
+    //get order detail
+    @GetMapping("/details/{id}")
+    public OrderDetailResponse getOrderDetail(@PathVariable Long id){
+        return orderService.getOrderDetail(id);
     }
 }

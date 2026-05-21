@@ -14,8 +14,13 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class CustomerProfileService {
+    private static final Logger log =
+            LoggerFactory.getLogger(CustomerProfileService.class);
 
     @Autowired
     private CustomerProfileRepository customerProfileRepository;
@@ -43,6 +48,9 @@ public class CustomerProfileService {
         profile.setUser(user);
         profile.setFullName(request.getFullName());
         profile.setAddress(request.getAddress());
+        profile.setWard(request.getWard());
+        profile.setDistrict(request.getDistrict());
+        profile.setProvince(request.getProvince());
         profile.setDob(request.getDob());
         profile.setPhoneNumber(request.getPhoneNumber());
         profile.setGender(request.getGender());
@@ -70,7 +78,6 @@ public class CustomerProfileService {
     public CustomerProfileResponse getCustomerProfileById(Long id) {
         CustomerProfile profile = customerProfileRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));
-        System.out.println("GET PROFILE ID = " + id);
         return mapToResponse(profile);
     }
 
@@ -97,6 +104,9 @@ public class CustomerProfileService {
 
         profile.setFullName(request.getFullName());
         profile.setAddress(request.getAddress());
+        profile.setWard(request.getWard());
+        profile.setDistrict(request.getDistrict());
+        profile.setProvince(request.getProvince());
         profile.setDob(request.getDob());
         profile.setPhoneNumber(request.getPhoneNumber());
         profile.setGender(request.getGender());
@@ -125,6 +135,9 @@ public class CustomerProfileService {
                 profile.getUser().getEmail(),
                 profile.getFullName(),
                 profile.getAddress(),
+                profile.getWard(),
+                profile.getDistrict(),
+                profile.getProvince(),
                 profile.getDob(),
                 profile.getPhoneNumber(),
                 profile.getGender()
