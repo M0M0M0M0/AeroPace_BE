@@ -52,6 +52,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/**")
                         .hasAnyRole("USER", "ADMIN")
 
+                        .requestMatchers(HttpMethod.GET, "/api/v1/admin/orders/**")
+                        .hasAnyRole( "ADMIN")
+
                         // Product management
                         .requestMatchers(HttpMethod.POST, "/api/v1/products/**")
                         .hasRole("ADMIN")
@@ -86,6 +89,19 @@ public class SecurityConfig {
                         .hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/brands/**")
+                        .hasRole("ADMIN")
+
+                        //Shipping method management
+                        .requestMatchers(HttpMethod.POST, "/api/v1/shipping_methods/**")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/shipping_methods/**")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/shipping_methods/**")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/shipping_methods/**")
                         .hasRole("ADMIN")
 
                         // Admin APIs
