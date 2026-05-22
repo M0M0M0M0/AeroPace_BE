@@ -1,6 +1,7 @@
 package com.group1.shop_runner.entity;
 
 import com.group1.shop_runner.enums.OrderStatus;
+import com.group1.shop_runner.enums.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,6 +33,10 @@ public class Order {
     @Column(length = 20, nullable = false)
     private OrderStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentMethod paymentMethod;
+
     @Column(name = "receiver_name", length = 255)
     private String receiverName;
 
@@ -61,4 +66,8 @@ public class Order {
 
     @Column(name = "province")
     private String province;
+
+    private String paymentOrderId;
+    private String paymentTransactionId;
+    private String paymentStatus = "PENDING";
 }

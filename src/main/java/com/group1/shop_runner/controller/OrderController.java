@@ -1,12 +1,14 @@
 package com.group1.shop_runner.controller;
 
 import com.group1.shop_runner.dto.order.request.CheckoutRequest;
+import com.group1.shop_runner.dto.order.request.UpdatePaymentRequest;
 import com.group1.shop_runner.dto.order.response.OrderDetailResponse;
 import com.group1.shop_runner.dto.order.response.OrderListResponse;
 import com.group1.shop_runner.entity.Order;
 import com.group1.shop_runner.enums.OrderStatus;
 import com.group1.shop_runner.service.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -64,6 +66,18 @@ public class OrderController {
     @PutMapping("/{orderId}/cancel")
     public void cancelOrder(@PathVariable Long orderId, Authentication authentication) {
         orderService.cancelOrder(orderId, authentication);
+    }
+    // =========================================================
+    // API 6: Update Order payment status
+    // PUT /api/orders/{orderId}/payment
+    // =========================================================
+    @PatchMapping("/{orderId}/payment")
+    public ResponseEntity<Void> updatePayment(
+            @PathVariable Long orderId,
+            @RequestBody UpdatePaymentRequest request
+    ) {
+        orderService.updatePayment(orderId, request);
+        return ResponseEntity.ok().build();
     }
 
 }

@@ -1,9 +1,10 @@
 package com.group1.shop_runner.enums;
 
 public enum OrderStatus {
+    PENDING,
     PAID,
-    SHIP_COD,
     SHIPPING,
     DELIVERED,
-    CANCELLED
+    CANCELLED,
+    COMPLETED
 }

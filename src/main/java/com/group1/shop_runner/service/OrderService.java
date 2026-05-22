@@ -1,11 +1,13 @@
 package com.group1.shop_runner.service;
 
 import com.group1.shop_runner.dto.order.request.CheckoutRequest;
+import com.group1.shop_runner.dto.order.request.UpdatePaymentRequest;
 import com.group1.shop_runner.dto.order.response.OrderDetailResponse;
 import com.group1.shop_runner.dto.order.response.OrderItemResponse;
 import com.group1.shop_runner.dto.order.response.OrderListResponse;
 import com.group1.shop_runner.entity.*;
 import com.group1.shop_runner.enums.OrderStatus;
+import com.group1.shop_runner.enums.PaymentMethod;
 import com.group1.shop_runner.repository.*;
 import com.group1.shop_runner.shared.exception.AppException;
 import com.group1.shop_runner.shared.exception.ErrorCode;
@@ -78,13 +80,18 @@ public class OrderService {
 
         order.setUser(user);
         order.setNote(request.getNote());
+
         String paymentMethod = request.getPaymentMethod();
-        // Status phân biệt theo phương thức thanh toán — COD chưa thu tiền, các method khác coi là đã thanh toán
-        if ("cod".equalsIgnoreCase(paymentMethod)) {
-            order.setStatus(OrderStatus.SHIP_COD);
+        if ("paypal".equalsIgnoreCase(paymentMethod)) {
+            order.setPaymentMethod(PaymentMethod.PAYPAL);
+            order.setStatus(OrderStatus.PENDING);
+            order.setPaymentStatus("PENDING");
         } else {
-            order.setStatus(OrderStatus.PAID);
+            order.setPaymentMethod(PaymentMethod.STRIPE);
+            order.setStatus(OrderStatus.PENDING);
+            order.setPaymentStatus("PENDING");
         }
+
         order.setShippingAddress(request.getShippingAddress());
         order.setPhoneNumber(request.getPhoneNumber());
         order.setReceiverName(request.getReceiverName());
@@ -171,7 +178,22 @@ public class OrderService {
 
         return order;
     }
+    /**
+     *
+     */
+    public void updatePayment(Long orderId, UpdatePaymentRequest request) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
+        order.setPaymentOrderId(request.getPaymentOrderId());
+        order.setPaymentTransactionId(request.getPaymentTransactionId());
+        order.setPaymentStatus(request.getPaymentStatus());
+        if ("PAID".equals(request.getPaymentStatus())) {
+            order.setStatus(OrderStatus.PAID);
+        }
+        order.setUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
+    }
     /**
      * Lấy lịch sử đơn hàng của một user, kèm danh sách item trong mỗi đơn.
      * Mỗi order trigger thêm một query lấy OrderItem — chấp nhận được với lịch sử cá nhân,
@@ -253,11 +275,26 @@ public class OrderService {
      * @throws AppException INVALID_STATUS_TRANSITION nếu transition không hợp lệ
      */
     private void validateStatusTransition(OrderStatus current, OrderStatus next) {
+
         boolean valid = switch (current) {
-            case PAID, SHIP_COD -> next == OrderStatus.SHIPPING || next == OrderStatus.CANCELLED;
-            case SHIPPING        -> next == OrderStatus.DELIVERED;
-            case DELIVERED,
-                 CANCELLED       -> false;
+
+            case PENDING ->
+                    next == OrderStatus.PAID
+                            || next == OrderStatus.CANCELLED;
+
+            case PAID ->
+                    next == OrderStatus.SHIPPING
+                            || next == OrderStatus.CANCELLED;
+
+            case SHIPPING ->
+                    next == OrderStatus.DELIVERED;
+
+            case DELIVERED ->
+                    next == OrderStatus.COMPLETED;
+
+            case COMPLETED,
+                 CANCELLED ->
+                    false;
         };
 
         if (!valid) {
