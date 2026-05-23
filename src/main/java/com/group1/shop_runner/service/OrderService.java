@@ -5,6 +5,7 @@ import com.group1.shop_runner.dto.order.request.UpdatePaymentRequest;
 import com.group1.shop_runner.dto.order.response.OrderDetailResponse;
 import com.group1.shop_runner.dto.order.response.OrderItemResponse;
 import com.group1.shop_runner.dto.order.response.OrderListResponse;
+import com.group1.shop_runner.dto.order.response.PendingOrderResponse;
 import com.group1.shop_runner.entity.*;
 import com.group1.shop_runner.enums.OrderStatus;
 import com.group1.shop_runner.enums.PaymentMethod;
@@ -22,6 +23,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -60,7 +63,18 @@ public class OrderService {
      */
     @Transactional
     public Order checkout(CheckoutRequest request) {
-
+        //auto cancel pending order
+        orderRepository.findByUserId(request.getUserId())
+                .stream()
+                .filter(order -> OrderStatus.PENDING.equals(order.getStatus())
+                        )
+                .forEach(order -> {
+                    order.setStatus(OrderStatus.CANCELLED);
+                    order.setPaymentStatus("UNPAID");
+                    order.setCancelReason("Người dùng khởi tạo thanh toán mới");
+                    orderRepository.save(order);
+                });
+        //validate data
         if (request.getUserId() == null ||
                 request.getShippingAddress() == null || request.getShippingAddress().isBlank() ||
                 request.getPhoneNumber() == null || request.getPhoneNumber().isBlank()) {
@@ -101,7 +115,14 @@ public class OrderService {
         order.setWard(request.getWard());
         order.setDistrict(request.getDistrict());
         order.setProvince(request.getProvince());
-
+        order.setVat(request.getVat());
+        order.setShippingMethod(shippingMethodRepository.findById(request.getShippingMethodId())
+                .orElseThrow( () -> new AppException(ErrorCode.SHIPPING_METHOD_NOT_FOUND))
+                .getName());
+        order.setShippingFee(shippingMethodRepository.findById(request.getShippingMethodId())
+                .orElseThrow(()-> new AppException(ErrorCode.SHIPPING_METHOD_NOT_FOUND))
+                .getFee());
+        order.setPaymentOrderId(request.getPaymentOrderId());
         // Save trước để có orderId cho OrderItem FK
         order = orderRepository.save(order);
 
@@ -174,25 +195,49 @@ public class OrderService {
 
         order = orderRepository.save(order);
 
-        cartItemRepository.deleteByUserId(request.getUserId());
 
         return order;
     }
     /**
-     *
+     * lay list pending order
+     */
+    public List<PendingOrderResponse> getUserPendingOrder(Long id){
+        User user = userRepository.findById(id)
+                .orElseThrow(()-> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        return orderRepository.findByUserId(id)
+                .stream()
+                .filter(order -> OrderStatus.PENDING.equals(order.getStatus())
+                        && PaymentMethod.PAYPAL.equals(order.getPaymentMethod())
+                        && order.getPaymentOrderId() != null)
+                .map(order -> PendingOrderResponse.builder()
+                        .orderId(order.getId())
+                        .paymentOrderId(order.getPaymentOrderId())
+                        .build())
+                .toList();
+    }
+    /**
+     * update trang thai payment cua order khi thanh toan thanh cong
      */
     public void updatePayment(Long orderId, UpdatePaymentRequest request) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+//        log.info("Found order: {}", orderId);
 
         order.setPaymentOrderId(request.getPaymentOrderId());
         order.setPaymentTransactionId(request.getPaymentTransactionId());
         order.setPaymentStatus(request.getPaymentStatus());
         if ("PAID".equals(request.getPaymentStatus())) {
-            order.setStatus(OrderStatus.PAID);
+//            order.setStatus(OrderStatus.PAID);
         }
         order.setUpdatedAt(LocalDateTime.now());
+//        log.info("About to delete cart for user: {}", order.getUser().getId());
+
+        cartItemRepository.deleteByUserId(order.getUser().getId());
+//        log.info("Cart deleted");
+
         orderRepository.save(order);
+//        log.info("Order saved");
     }
     /**
      * Lấy lịch sử đơn hàng của một user, kèm danh sách item trong mỗi đơn.

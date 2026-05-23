@@ -29,6 +29,9 @@ public class Order {
     @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
 
+    @Column(name = "vat", nullable = false)
+    private BigDecimal vat = BigDecimal.ZERO;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private OrderStatus status;
@@ -66,6 +69,12 @@ public class Order {
 
     @Column(name = "province")
     private String province;
+
+    @Column(name = "shipping_method")
+    private String shippingMethod;
+
+    @Column(name = "shipping_fee")
+    private BigDecimal shippingFee;
 
     private String paymentOrderId;
     private String paymentTransactionId;

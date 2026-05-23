@@ -4,6 +4,7 @@ import com.group1.shop_runner.dto.order.request.CheckoutRequest;
 import com.group1.shop_runner.dto.order.request.UpdatePaymentRequest;
 import com.group1.shop_runner.dto.order.response.OrderDetailResponse;
 import com.group1.shop_runner.dto.order.response.OrderListResponse;
+import com.group1.shop_runner.dto.order.response.PendingOrderResponse;
 import com.group1.shop_runner.entity.Order;
 import com.group1.shop_runner.enums.OrderStatus;
 import com.group1.shop_runner.service.OrderService;
@@ -78,6 +79,14 @@ public class OrderController {
     ) {
         orderService.updatePayment(orderId, request);
         return ResponseEntity.ok().build();
+    }
+    // =========================================================
+    // API 7: Get pending order
+    // PUT /api/orders/{orderId}/payment
+    // =========================================================
+    @GetMapping("/paypal/pending/{userId}")
+    public List<PendingOrderResponse> getUserPendingOrder(@PathVariable Long userId){
+        return orderService.getUserPendingOrder(userId);
     }
 
 }
