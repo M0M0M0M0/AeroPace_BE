@@ -11,7 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 public class OrderDetailResponse {
-    private Long id;
+    private String orderCode;
     private Long userId;
     private String username;
     private BigDecimal totalPrice;

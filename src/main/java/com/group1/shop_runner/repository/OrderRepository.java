@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long>,
         JpaSpecificationExecutor<Order> {
@@ -18,4 +19,5 @@ public interface OrderRepository extends JpaRepository<Order, Long>,
             PaymentMethod paymentMethod,
             LocalDateTime time
     );
+    Optional<Order> findByOrderCode(String orderCode);
 }

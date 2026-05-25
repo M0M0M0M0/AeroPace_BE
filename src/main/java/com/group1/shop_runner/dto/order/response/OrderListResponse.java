@@ -1,5 +1,6 @@
 package com.group1.shop_runner.dto.order.response;
 
+import com.group1.shop_runner.enums.CancelReason;
 import com.group1.shop_runner.enums.OrderStatus;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +12,7 @@ import java.util.List;
 @Getter
 @Setter
 public class OrderListResponse {
-    private Long id;
+    private String orderCode;
     private BigDecimal totalPrice;
     private OrderStatus status;
     private String shippingAddress;
@@ -19,4 +20,6 @@ public class OrderListResponse {
     private String receiverName;
     private LocalDateTime createdAt;
     private List<OrderItemResponse> items;
+    private CancelReason cancelReason;
+    private String cancelNote;
 }

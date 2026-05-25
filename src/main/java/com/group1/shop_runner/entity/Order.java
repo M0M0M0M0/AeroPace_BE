@@ -1,5 +1,6 @@
 package com.group1.shop_runner.entity;
 
+import com.group1.shop_runner.enums.CancelReason;
 import com.group1.shop_runner.enums.OrderStatus;
 import com.group1.shop_runner.enums.PaymentMethod;
 import jakarta.persistence.*;
@@ -58,9 +59,6 @@ public class Order {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "cancel_reason")
-    private String cancelReason;
-
     @Column(name = "ward")
     private String ward;
 
@@ -79,4 +77,14 @@ public class Order {
     private String paymentOrderId;
     private String paymentTransactionId;
     private String paymentStatus = "PENDING";
+
+    @Column(name = "order_code", unique = true)
+    private String orderCode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancel_reason")
+    private CancelReason cancelReason;
+
+    @Column(name = "cancel_note")
+    private String cancelNote;
 }

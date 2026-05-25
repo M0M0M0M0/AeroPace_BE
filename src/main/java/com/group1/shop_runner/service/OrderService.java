@@ -7,12 +7,14 @@ import com.group1.shop_runner.dto.order.response.OrderItemResponse;
 import com.group1.shop_runner.dto.order.response.OrderListResponse;
 import com.group1.shop_runner.dto.order.response.PendingOrderResponse;
 import com.group1.shop_runner.entity.*;
+import com.group1.shop_runner.enums.CancelReason;
 import com.group1.shop_runner.enums.OrderStatus;
 import com.group1.shop_runner.enums.PaymentMethod;
 import com.group1.shop_runner.repository.*;
 import com.group1.shop_runner.shared.exception.AppException;
 import com.group1.shop_runner.shared.exception.ErrorCode;
 import com.group1.shop_runner.specification.OrderSpecification;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -71,7 +74,8 @@ public class OrderService {
                 .forEach(order -> {
                     order.setStatus(OrderStatus.CANCELLED);
                     order.setPaymentStatus("UNPAID");
-                    order.setCancelReason("Người dùng khởi tạo thanh toán mới");
+                    order.setCancelReason(CancelReason.PAYMENT_REPLACED);
+                    order.setCancelNote("Người dùng khởi tạo thanh toán mới");
                     orderRepository.save(order);
                 });
         //validate data
@@ -123,6 +127,7 @@ public class OrderService {
                 .orElseThrow(()-> new AppException(ErrorCode.SHIPPING_METHOD_NOT_FOUND))
                 .getFee());
         order.setPaymentOrderId(request.getPaymentOrderId());
+        order.setOrderCode(generateOrderCode());
         // Save trước để có orderId cho OrderItem FK
         order = orderRepository.save(order);
 
@@ -227,6 +232,7 @@ public class OrderService {
         order.setPaymentOrderId(request.getPaymentOrderId());
         order.setPaymentTransactionId(request.getPaymentTransactionId());
         order.setPaymentStatus(request.getPaymentStatus());
+        order.setStatus(OrderStatus.PAID);
         if ("PAID".equals(request.getPaymentStatus())) {
 //            order.setStatus(OrderStatus.PAID);
         }
@@ -255,6 +261,8 @@ public class OrderService {
         List<Order> orders = orderRepository.findByUserId(userId);
 
         return orders.stream()
+                .filter(order-> order.getCancelReason() != CancelReason.PAYMENT_REPLACED
+                && order.getCancelReason() != CancelReason.PAYMENT_TIMEOUT)
                 .map(this::mapToOrderListResponse)
                 .toList();
     }
@@ -266,15 +274,15 @@ public class OrderService {
      * @throws AppException ORDER_NOT_FOUND
      */
     @Transactional(readOnly = true)
-    public OrderDetailResponse getOrderById(Long orderId) {
-        if (orderId == null) {
+    public OrderDetailResponse getOrderByCode(String orderCode) {
+        if (orderCode == null) {
             throw new AppException(ErrorCode.INVALID_INPUT);
         }
 
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
-        List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
+        List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
 
         return mapToOrderDetailResponse(order, orderItems);
     }
@@ -299,7 +307,8 @@ public class OrderService {
         order.setUpdatedAt(LocalDateTime.now());
 
         if (newStatus == OrderStatus.CANCELLED) {
-            order.setCancelReason(reason);
+            order.setCancelReason(CancelReason.ADMIN_CANCELLED);
+            order.setCancelNote(reason);
             List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
             for (OrderItem item : items) {
                 ProductVariant variant = item.getProductVariant();
@@ -353,33 +362,38 @@ public class OrderService {
      * @throws AppException ORDER_NOT_FOUND, INVALID_STATUS_TRANSITION
      */
     @Transactional
-    public void cancelOrder(Long orderId, Authentication authentication) {
-        Order order = orderRepository.findById(orderId)
+    public void cancelOrder(String orderCode, Authentication authentication, String cancelNote) {
+        Order order = orderRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
         String currentUsername = authentication.getName();
         User currentUser = userRepository.findByUsername(currentUsername)
-                .orElseThrow( () -> new AppException(ErrorCode.USER_NOT_FOUND));
-        String currentUserEmail = currentUser.getEmail();
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        if(order.getUser().getEmail().equals(currentUserEmail)
-                && (    order.getStatus() == OrderStatus.SHIPPING
-                        || order.getStatus() == OrderStatus.DELIVERED
-                        || order.getStatus() == OrderStatus.CANCELLED))
-        {
-            validateStatusTransition(order.getStatus(), OrderStatus.CANCELLED);
-            order.setStatus(OrderStatus.CANCELLED);
-            //hoan stock
-            List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
-            for (OrderItem item : items) {
-                ProductVariant variant = item.getProductVariant();
-                variant.setStock(variant.getStock() + item.getQuantity());
-                productVariantRepository.save(variant);
-            }
-            order.setUpdatedAt(LocalDateTime.now());
-
-            orderRepository.save(order);
+        if (!order.getUser().getEmail().equals(currentUser.getEmail())) {
+            throw new AppException(ErrorCode.ORDER_ACCESS_DENIED);
         }
+
+        if (order.getStatus() == OrderStatus.SHIPPING
+                || order.getStatus() == OrderStatus.DELIVERED
+                || order.getStatus() == OrderStatus.CANCELLED) {
+            throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        order.setCancelReason(CancelReason.USER_CANCELLED);
+        order.setCancelNote(cancelNote);
+
+        // Hoàn stock
+        List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+        for (OrderItem item : items) {
+            ProductVariant variant = item.getProductVariant();
+            variant.setStock(variant.getStock() + item.getQuantity());
+            productVariantRepository.save(variant);
+        }
+
+        order.setUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
     }
 
     /**
@@ -388,13 +402,15 @@ public class OrderService {
      */
     private OrderListResponse mapToOrderListResponse(Order order) {
         OrderListResponse response = new OrderListResponse();
-        response.setId(order.getId());
+        response.setOrderCode(order.getOrderCode());
         response.setTotalPrice(order.getTotalPrice());
         response.setStatus(order.getStatus());
         response.setShippingAddress(order.getShippingAddress());
         response.setPhoneNumber(order.getPhoneNumber());
         response.setReceiverName(order.getReceiverName());
         response.setCreatedAt(order.getCreatedAt());
+        response.setCancelReason(order.getCancelReason());
+        response.setCancelNote(order.getCancelNote());
 
         List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
         List<OrderItemResponse> itemResponses = orderItems.stream().map(item -> {
@@ -418,7 +434,7 @@ public class OrderService {
 
     private OrderDetailResponse mapToOrderDetailResponse(Order order, List<OrderItem> orderItems) {
         OrderDetailResponse response = new OrderDetailResponse();
-        response.setId(order.getId());
+        response.setOrderCode(order.getOrderCode());
         response.setUsername(order.getUser().getUsername());
         response.setTotalPrice(order.getTotalPrice());
         response.setStatus(order.getStatus());
@@ -455,12 +471,12 @@ public class OrderService {
      * Kết quả sắp xếp theo id tăng dần.
      */
     public List<OrderListResponse> getAllOrders(
-            String id, String receiverName, String phoneNumber,
+            String orderCode, String receiverName, String phoneNumber,
             String shippingAddress, String status,
             String dateFrom, String dateTo
     ) {
         var spec = OrderSpecification.build(
-                id, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo
+                orderCode, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo
         );
         return orderRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "id"))
                 .stream()
@@ -484,11 +500,11 @@ public class OrderService {
     }
 
 //    lay order detail cho admin
-    public OrderDetailResponse getOrderDetail(Long id){
+    public OrderDetailResponse getOrderDetail(String orderCode){
         OrderDetailResponse response = new OrderDetailResponse();
-        Order order = orderRepository.findById(id)
+        Order order = orderRepository.findByOrderCode(orderCode)
                 .orElseThrow(()-> new AppException(ErrorCode.ORDER_NOT_FOUND));
-        response.setId(id);
+        response.setOrderCode(order.getOrderCode());
         response.setUserId(order.getUser().getId());
         response.setUsername(order.getUser().getUsername());
         response.setTotalPrice(order.getTotalPrice());
@@ -502,7 +518,7 @@ public class OrderService {
         response.setNote(order.getNote());
         response.setCreatedAt(order.getCreatedAt());
 
-        List<OrderItem> orderItems = orderItemRepository.findByOrderId(id);
+        List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
         List<OrderItemResponse> itemResponses = orderItems.stream().map(item -> {
             OrderItemResponse itemResponse = new OrderItemResponse();
             itemResponse.setProductVariantId(Math.toIntExact(item.getProductVariant().getId()));
@@ -520,5 +536,15 @@ public class OrderService {
         response.setItems(itemResponses);
 
         return response;
+    }
+
+    /**
+     *
+     * random gen order code
+     */
+    private String generateOrderCode() {
+        String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String random = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+        return "ORD-" + date + "-" + random;
     }
 }

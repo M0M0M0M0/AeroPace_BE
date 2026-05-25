@@ -19,7 +19,7 @@ public class AdminOrderController {
 
     @GetMapping
     public List<OrderListResponse> getAllOrders(
-            @RequestParam(required = false) String id,
+            @RequestParam(required = false) String orderCode,
             @RequestParam(required = false) String receiverName,
             @RequestParam(required = false) String phoneNumber,
             @RequestParam(required = false) String shippingAddress,
@@ -28,7 +28,7 @@ public class AdminOrderController {
             @RequestParam(required = false) String dateTo
     ) {
         return orderService.getAllOrders(
-                id, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo
+                orderCode, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo
         );
     }
     //update order status
@@ -42,8 +42,8 @@ public class AdminOrderController {
         orderService.updateOrderStatus(orderId, status, reason);
     }
     //get order detail
-    @GetMapping("/details/{id}")
-    public OrderDetailResponse getOrderDetail(@PathVariable Long id){
-        return orderService.getOrderDetail(id);
+    @GetMapping("/details/{orderCode}")
+    public OrderDetailResponse getOrderDetail(@PathVariable String orderCode){
+        return orderService.getOrderDetail(orderCode);
     }
 }

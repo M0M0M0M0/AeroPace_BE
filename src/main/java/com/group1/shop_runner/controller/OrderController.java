@@ -54,9 +54,9 @@ public class OrderController {
     // - Hiển thị chi tiết đơn hàng
     // - Bao gồm danh sách OrderItem
     // =========================================================
-    @GetMapping("/{orderId}")
-    public OrderDetailResponse getOrderById(@PathVariable Long orderId) {
-        return orderService.getOrderById(orderId);
+    @GetMapping("/{orderCode}")
+    public OrderDetailResponse getOrderById(@PathVariable String orderCode) {
+        return orderService.getOrderByCode(orderCode);
     }
     // =========================================================
 
@@ -64,9 +64,9 @@ public class OrderController {
     // API 5: Cancel Order
     // PUT /api/orders/{orderId}/cancel
     // =========================================================
-    @PutMapping("/{orderId}/cancel")
-    public void cancelOrder(@PathVariable Long orderId, Authentication authentication) {
-        orderService.cancelOrder(orderId, authentication);
+    @PutMapping("/{orderCode}/cancel")
+    public void cancelOrder(@PathVariable String orderCode, Authentication authentication, String cancelNote) {
+        orderService.cancelOrder(orderCode, authentication, cancelNote);
     }
     // =========================================================
     // API 6: Update Order payment status
