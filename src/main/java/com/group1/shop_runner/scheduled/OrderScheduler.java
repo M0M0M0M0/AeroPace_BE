@@ -1,9 +1,10 @@
 package com.group1.shop_runner.scheduled;
 
 import com.group1.shop_runner.entity.Order;
-import com.group1.shop_runner.enums.CancelReason;
+import com.group1.shop_runner.enums.CancelType;
 import com.group1.shop_runner.enums.OrderStatus;
 import com.group1.shop_runner.enums.PaymentMethod;
+import com.group1.shop_runner.enums.PaymentStatus;
 import com.group1.shop_runner.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,9 +34,9 @@ public class OrderScheduler {
 
         expiredOrders.forEach(order -> {
             order.setStatus(OrderStatus.CANCELLED);
-            order.setCancelReason(CancelReason.PAYMENT_TIMEOUT);
-            order.setCancelNote("Hết thời gian thanh toán PayPal");
-            order.setPaymentStatus("UNPAID");
+            order.setCancelType(CancelType.PAYMENT_TIMEOUT);
+            order.setCancelReason("Hết thời gian thanh toán PayPal");
+            order.setPaymentStatus(PaymentStatus.FAILED);
             orderRepository.save(order);
             log.info("Auto cancelled expired PayPal order: {}", order.getId());
         });

@@ -8,12 +8,16 @@ import com.group1.shop_runner.dto.order.response.PendingOrderResponse;
 import com.group1.shop_runner.entity.Order;
 import com.group1.shop_runner.enums.OrderStatus;
 import com.group1.shop_runner.service.OrderService;
+import com.group1.shop_runner.service.StripeService;
+import com.stripe.exception.StripeException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/orders")
@@ -21,6 +25,9 @@ public class OrderController {
 
     @Autowired
     private OrderService orderService;
+
+    @Autowired
+    private StripeService stripeService;
 
     // =========================================================
     // API 1: Checkout
@@ -32,8 +39,9 @@ public class OrderController {
     // - Xóa cart sau khi checkout thành công
     // =========================================================
     @PostMapping("/checkout")
-    public Order checkout(@RequestBody CheckoutRequest request) {
-        return orderService.checkout(request);
+    public ResponseEntity<?> checkout(@RequestBody CheckoutRequest request) {
+        Order order = orderService.checkout(request);
+        return ResponseEntity.ok(Map.of("id", order.getId()));
     }
 
     // =========================================================

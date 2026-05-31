@@ -41,6 +41,8 @@ public enum ErrorCode {
     ORDER_ACCESS_DENIED("3029", "You do not have permission to update this order", HttpStatus.FORBIDDEN),
     INVALID_ORDER_STATUS_UPDATE("3030", "Invalid order status", HttpStatus.BAD_REQUEST),
     SHIPPING_METHOD_NOT_FOUND("3031","Shipping method not found",HttpStatus.NOT_FOUND),
+    STRIPE_PAYMENT_FAILED("3032","Stripe payment failed",HttpStatus.BAD_REQUEST),
+    INVALID_REFUND_STATUS("3033","Order is not eligible for refund",HttpStatus.BAD_REQUEST),
 
     INTERNAL_ERROR("9999", "Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
     private final String code;

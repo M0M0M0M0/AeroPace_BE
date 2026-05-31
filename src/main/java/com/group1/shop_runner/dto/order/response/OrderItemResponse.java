@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class OrderItemResponse {
-    private Integer productVariantId;
+    private Long productVariantId;
     private Integer quantity;
     private BigDecimal price;
 

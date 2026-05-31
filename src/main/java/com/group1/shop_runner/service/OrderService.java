@@ -7,13 +7,15 @@ import com.group1.shop_runner.dto.order.response.OrderItemResponse;
 import com.group1.shop_runner.dto.order.response.OrderListResponse;
 import com.group1.shop_runner.dto.order.response.PendingOrderResponse;
 import com.group1.shop_runner.entity.*;
-import com.group1.shop_runner.enums.CancelReason;
+import com.group1.shop_runner.enums.CancelType;
 import com.group1.shop_runner.enums.OrderStatus;
 import com.group1.shop_runner.enums.PaymentMethod;
+import com.group1.shop_runner.enums.PaymentStatus;
 import com.group1.shop_runner.repository.*;
 import com.group1.shop_runner.shared.exception.AppException;
 import com.group1.shop_runner.shared.exception.ErrorCode;
 import com.group1.shop_runner.specification.OrderSpecification;
+import com.stripe.exception.StripeException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -26,7 +28,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,6 +53,8 @@ public class OrderService {
     @Autowired
     private ShippingMethodRepository shippingMethodRepository;
 
+    @Autowired
+    private StripeService stripeService;
     /**
      * Tạo đơn hàng từ toàn bộ cart của user.
      * Flow: validate input → tạo Order rỗng → duyệt cart → trừ stock → lưu OrderItem → xóa cart.
@@ -73,9 +76,9 @@ public class OrderService {
                         )
                 .forEach(order -> {
                     order.setStatus(OrderStatus.CANCELLED);
-                    order.setPaymentStatus("UNPAID");
-                    order.setCancelReason(CancelReason.PAYMENT_REPLACED);
-                    order.setCancelNote("Người dùng khởi tạo thanh toán mới");
+                    order.setPaymentStatus(PaymentStatus.FAILED);
+                    order.setCancelType(CancelType.PAYMENT_REPLACED);
+                    order.setCancelReason("Người dùng khởi tạo thanh toán mới");
                     orderRepository.save(order);
                 });
         //validate data
@@ -103,11 +106,11 @@ public class OrderService {
         if ("paypal".equalsIgnoreCase(paymentMethod)) {
             order.setPaymentMethod(PaymentMethod.PAYPAL);
             order.setStatus(OrderStatus.PENDING);
-            order.setPaymentStatus("PENDING");
+            order.setPaymentStatus(PaymentStatus.PENDING);
         } else {
             order.setPaymentMethod(PaymentMethod.STRIPE);
             order.setStatus(OrderStatus.PENDING);
-            order.setPaymentStatus("PENDING");
+            order.setPaymentStatus(PaymentStatus.PENDING);
         }
 
         order.setShippingAddress(request.getShippingAddress());
@@ -227,23 +230,28 @@ public class OrderService {
     public void updatePayment(Long orderId, UpdatePaymentRequest request) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-//        log.info("Found order: {}", orderId);
 
         order.setPaymentOrderId(request.getPaymentOrderId());
-        order.setPaymentTransactionId(request.getPaymentTransactionId());
-        order.setPaymentStatus(request.getPaymentStatus());
+        if (order.getPaymentMethod() == PaymentMethod.STRIPE
+                && request.getPaymentOrderId() != null) {
+            try {
+                String chargeId = stripeService.getChargeId(request.getPaymentOrderId());
+                order.setPaymentTransactionId(chargeId);
+            } catch (StripeException e) {
+                log.warn("Không thể lấy chargeId từ Stripe: {}", e.getMessage());
+            }
+        } else {
+            order.setPaymentTransactionId(request.getPaymentTransactionId());
+        }
+        order.setPaymentStatus(PaymentStatus.PAID);
         order.setStatus(OrderStatus.PAID);
         if ("PAID".equals(request.getPaymentStatus())) {
-//            order.setStatus(OrderStatus.PAID);
+            order.setStatus(OrderStatus.PAID);
         }
         order.setUpdatedAt(LocalDateTime.now());
-//        log.info("About to delete cart for user: {}", order.getUser().getId());
 
         cartItemRepository.deleteByUserId(order.getUser().getId());
-//        log.info("Cart deleted");
-
         orderRepository.save(order);
-//        log.info("Order saved");
     }
     /**
      * Lấy lịch sử đơn hàng của một user, kèm danh sách item trong mỗi đơn.
@@ -261,8 +269,8 @@ public class OrderService {
         List<Order> orders = orderRepository.findByUserId(userId);
 
         return orders.stream()
-                .filter(order-> order.getCancelReason() != CancelReason.PAYMENT_REPLACED
-                && order.getCancelReason() != CancelReason.PAYMENT_TIMEOUT)
+                .filter(order-> order.getCancelType() != CancelType.PAYMENT_REPLACED
+                && order.getCancelType() != CancelType.PAYMENT_TIMEOUT)
                 .map(this::mapToOrderListResponse)
                 .toList();
     }
@@ -296,20 +304,22 @@ public class OrderService {
      * @throws AppException ORDER_NOT_FOUND, INVALID_ORDER_STATUS_UPDATE, ORDER_ACCESS_DENIED, INVALID_STATUS_TRANSITION
      */
     @Transactional
-    public void updateOrderStatus(Long orderId, OrderStatus newStatus, String reason) {
+    public void updateOrderStatus(String orderCode, OrderStatus newStatus, String reason) {
 
-        Order order = orderRepository.findById(orderId)
+        Order order = orderRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
         validateStatusTransition(order.getStatus(), newStatus);
 
         order.setStatus(newStatus);
         order.setUpdatedAt(LocalDateTime.now());
-
+        if(order.getPaymentStatus() == PaymentStatus.PAID){
+            order.setPaymentStatus(PaymentStatus.REFUND_PENDING) ;
+        }
         if (newStatus == OrderStatus.CANCELLED) {
-            order.setCancelReason(CancelReason.ADMIN_CANCELLED);
-            order.setCancelNote(reason);
-            List<OrderItem> items = orderItemRepository.findByOrderId(orderId);
+            order.setCancelType(CancelType.ADMIN_CANCELLED);
+            order.setCancelReason(reason);
+            List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
             for (OrderItem item : items) {
                 ProductVariant variant = item.getProductVariant();
                 variant.setStock(variant.getStock() + item.getQuantity());
@@ -381,8 +391,11 @@ public class OrderService {
         }
 
         order.setStatus(OrderStatus.CANCELLED);
-        order.setCancelReason(CancelReason.USER_CANCELLED);
-        order.setCancelNote(cancelNote);
+        order.setCancelType(CancelType.USER_CANCELLED);
+        order.setCancelReason(cancelNote);
+        if(order.getPaymentStatus() == PaymentStatus.PAID){
+            order.setPaymentStatus(PaymentStatus.REFUND_PENDING) ;
+        }
 
         // Hoàn stock
         List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
@@ -409,21 +422,20 @@ public class OrderService {
         response.setPhoneNumber(order.getPhoneNumber());
         response.setReceiverName(order.getReceiverName());
         response.setCreatedAt(order.getCreatedAt());
-        response.setCancelReason(order.getCancelReason());
-        response.setCancelNote(order.getCancelNote());
+        response.setCancelType(order.getCancelType());
+        response.setCancelNote(order.getCancelReason());
 
-        List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
-        List<OrderItemResponse> itemResponses = orderItems.stream().map(item -> {
+        List<OrderItemResponse> itemResponses = order.getOrderItems().stream().map(item -> {
             OrderItemResponse itemResponse = new OrderItemResponse();
-            itemResponse.setProductVariantId(Math.toIntExact(item.getProductVariant().getId()));
+            itemResponse.setProductVariantId(
+                    item.getProductVariant() != null ? item.getProductVariant().getId() : null
+            );
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
             itemResponse.setProductName(item.getProductName());
             itemResponse.setVariantName(item.getVariantName());
             itemResponse.setSku(item.getSku());
-
             itemResponse.setProductImgUrl(item.getProductImgUrl());
-
             itemResponse.setNote(item.getNote());
             return itemResponse;
         }).toList();
@@ -447,9 +459,17 @@ public class OrderService {
         response.setNote(order.getNote());
         response.setCreatedAt(order.getCreatedAt());
 
+        response.setPaymentStatus(order.getPaymentStatus());
+        response.setPaymentMethod(order.getPaymentMethod());
+        response.setShippingFee(order.getShippingFee());
+        response.setVat(order.getVat());
+        response.setCancelReason(order.getCancelReason());
+        response.setCancelType(order.getCancelType());
+
+
         List<OrderItemResponse> items = orderItems.stream().map(item -> {
             OrderItemResponse itemResponse = new OrderItemResponse();
-            itemResponse.setProductVariantId(Math.toIntExact(item.getProductVariant().getId()));
+            itemResponse.setProductVariantId(item.getProductVariant().getId());
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
             // Đọc từ snapshot — không lazy-load product để tránh thay đổi sau đặt hàng ảnh hưởng response
@@ -517,11 +537,20 @@ public class OrderService {
         response.setReceiverName(order.getReceiverName());
         response.setNote(order.getNote());
         response.setCreatedAt(order.getCreatedAt());
+        response.setPaymentStatus(order.getPaymentStatus());
+        response.setPaymentMethod(order.getPaymentMethod());
+        response.setShippingFee(order.getShippingFee());
+        response.setVat(order.getVat());
+        response.setCancelReason(order.getCancelReason());
+        response.setCancelType(order.getCancelType());
+        response.setPaymentOrderId(order.getPaymentOrderId());
+        response.setPaymentTransactionId(order.getPaymentTransactionId());
+        response.setRefundReason(order.getRefundReason());
 
         List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
         List<OrderItemResponse> itemResponses = orderItems.stream().map(item -> {
             OrderItemResponse itemResponse = new OrderItemResponse();
-            itemResponse.setProductVariantId(Math.toIntExact(item.getProductVariant().getId()));
+            itemResponse.setProductVariantId(item.getProductVariant().getId());
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
             itemResponse.setProductName(item.getProductName());

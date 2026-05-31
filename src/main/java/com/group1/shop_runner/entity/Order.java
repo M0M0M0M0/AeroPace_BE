@@ -1,8 +1,9 @@
 package com.group1.shop_runner.entity;
 
-import com.group1.shop_runner.enums.CancelReason;
+import com.group1.shop_runner.enums.CancelType;
 import com.group1.shop_runner.enums.OrderStatus;
 import com.group1.shop_runner.enums.PaymentMethod;
+import com.group1.shop_runner.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,6 +11,8 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "orders")
@@ -53,6 +56,9 @@ public class Order {
     @Column(name = "note", length = 500)
     private String note;
 
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    private List<OrderItem> orderItems = new ArrayList<>();
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
@@ -76,15 +82,20 @@ public class Order {
 
     private String paymentOrderId;
     private String paymentTransactionId;
-    private String paymentStatus = "PENDING";
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status")
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
     @Column(name = "order_code", unique = true)
     private String orderCode;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "cancel_reason")
-    private CancelReason cancelReason;
+    @Column(name = "cancel_type")
+    private CancelType cancelType;
 
-    @Column(name = "cancel_note")
-    private String cancelNote;
+    @Column(name = "cancel_reason")
+    private String cancelReason;
+
+    @Column(name = "refund_reason")
+    private String refundReason;
 }

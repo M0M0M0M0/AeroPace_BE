@@ -8,12 +8,12 @@ import java.time.LocalDate;
 public class OrderSpecification {
 
     public static Specification<Order> build(
-            String id, String receiverName, String phoneNumber,
+            String orderCode, String receiverName, String phoneNumber,
             String shippingAddress, String status,
             String dateFrom, String dateTo
     ) {
         return Specification
-                .where(likeId(id))
+                .where(likeOrderCode(orderCode))
                 .and(likeReceiverName(receiverName))
                 .and(likePhoneNumber(phoneNumber))
                 .and(likeAddress(shippingAddress))
@@ -22,10 +22,10 @@ public class OrderSpecification {
                 .and(toDate(dateTo));
     }
 
-    private static Specification<Order> likeId(String id) {
+    private static Specification<Order> likeOrderCode(String orderCode) {
         return (root, query, cb) -> {
-            if (id == null || id.isBlank()) return null;
-            return cb.like(root.get("id").as(String.class), "%" + id.trim() + "%");
+            if (orderCode == null || orderCode.isBlank()) return null;
+            return cb.like(root.get("orderCode"), "%" + orderCode.trim() + "%");
         };
     }
 

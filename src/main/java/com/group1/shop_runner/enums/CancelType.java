@@ -1,6 +1,6 @@
 package com.group1.shop_runner.enums;
 
-public enum CancelReason {
+public enum CancelType {
     USER_CANCELLED,
     ADMIN_CANCELLED,
     PAYMENT_TIMEOUT,

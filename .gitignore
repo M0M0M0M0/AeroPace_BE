@@ -34,3 +34,5 @@ build/
 
 ### User - Password database ###
 application-local-*.properties
+
+/src/main/resources/application-local.properties

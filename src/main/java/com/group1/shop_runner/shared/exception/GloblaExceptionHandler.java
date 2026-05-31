@@ -1,10 +1,12 @@
 package com.group1.shop_runner.shared.exception;
 
 import com.group1.shop_runner.dto.product.ApiError;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+@Slf4j
 @RestControllerAdvice
 public class GloblaExceptionHandler {
 
@@ -19,7 +21,7 @@ public class GloblaExceptionHandler {
     // Bắt lỗi chung của hệ thống (nếu có):
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleException(Exception ex) {
-
+        log.error("Unhandled exception: ", ex);
         ApiError error = new ApiError(
                 ErrorCode.INTERNAL_ERROR.getCode(),
                 ErrorCode.INTERNAL_ERROR.getMessage()

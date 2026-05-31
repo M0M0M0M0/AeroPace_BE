@@ -1,6 +1,6 @@
 package com.group1.shop_runner.dto.order.response;
 
-import com.group1.shop_runner.enums.CancelReason;
+import com.group1.shop_runner.enums.CancelType;
 import com.group1.shop_runner.enums.OrderStatus;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,6 +20,6 @@ public class OrderListResponse {
     private String receiverName;
     private LocalDateTime createdAt;
     private List<OrderItemResponse> items;
-    private CancelReason cancelReason;
+    private CancelType cancelType;
     private String cancelNote;
 }

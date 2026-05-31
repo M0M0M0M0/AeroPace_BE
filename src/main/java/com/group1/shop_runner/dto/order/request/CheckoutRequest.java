@@ -20,4 +20,5 @@ public class CheckoutRequest {
     private String province;
     private BigDecimal vat;
     private Long shippingMethodId;
+    private BigDecimal grandTotal;
 }
