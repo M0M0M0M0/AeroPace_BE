@@ -1,5 +1,6 @@
 package com.group1.shop_runner.controller;
 
+import com.group1.shop_runner.dto.product.request.ProductFullUpdateRequest;
 import com.group1.shop_runner.dto.product.request.ProductRequest;
 import com.group1.shop_runner.dto.product.request.ProductVariantRequest;
 import com.group1.shop_runner.dto.product.response.BestSellerResponse;
@@ -198,6 +199,15 @@ public class AdminProductController {
     ) {
         if (limit < 1 || limit > 100) limit = 10;
         List<BestSellerResponse> result = productService.getBestSellers(dateFrom, dateTo, limit);
+        return ResponseEntity.ok(result);
+    }
+
+    @PutMapping("/{id}/full-update")
+    public ResponseEntity<ProductResponse> fullUpdateProduct(
+            @PathVariable Long id,
+            @RequestBody ProductFullUpdateRequest request
+    ) {
+        ProductResponse result = productService.fullUpdateProduct(id, request);
         return ResponseEntity.ok(result);
     }
 }
