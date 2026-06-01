@@ -85,24 +85,64 @@ public class ProductService {
      *
      * @throws AppException BRAND_NOT_FOUND nếu brandId không hợp lệ
      */
-    public ProductDetailResponse createProduct(ProductRequest request) {
+    @Transactional
+    public ProductResponse fullCreateProduct(ProductFullUpdateRequest request) {
         Brand brand = brandRepository.findById(request.getBrandId())
                 .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND));
 
+        //product
         Product product = new Product();
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setBrand(brand);
-        product.setSlug(generateSlug(request.getName())
-        );
+        product.setSlug(generateSlug(request.getName()));
         product.setOption1Name(request.getOption1Name());
         product.setOption2Name(request.getOption2Name());
         product.setOption3Name(request.getOption3Name());
-        product.setStatus(request.getStatus() != null ? request.getStatus() : Product.Status.ACTIVE);
-
+        product.setStatus(request.getStatus() != null ? request.getStatus() : Product.Status.DRAFT);
+        product.setCreatedAt(LocalDateTime.now());
+        product.setUpdatedAt(LocalDateTime.now());
         Product savedProduct = productRepository.save(product);
 
-        return mapToProductDetailResponse(savedProduct);
+        //variants
+        if (request.getVariants() != null) {
+            for (ProductFullUpdateRequest.VariantItem v : request.getVariants()) {
+                if (v.getOption1Value() != null && v.getPrice() != null) {
+                    createVariantForProduct(savedProduct, v);
+                }
+            }
+        }
+
+        //images
+        if (request.getImages() != null) {
+            for (ProductFullUpdateRequest.ImageItem img : request.getImages()) {
+                if (img.getImageUrl() != null && !img.getImageUrl().isBlank()) {
+                    ProductImage newImage = new ProductImage();
+                    newImage.setProduct(savedProduct);
+                    newImage.setImageUrl(img.getImageUrl());
+                    newImage.setPosition(img.getPosition() != null ? img.getPosition() : 1);
+                    newImage.setCreatedAt(LocalDateTime.now());
+                    newImage.setUpdatedAt(LocalDateTime.now());
+                    productImageRepository.save(newImage);
+                }
+            }
+        }
+
+        //categories
+        if (request.getCategoryIds() != null) {
+            for (Long catId : request.getCategoryIds()) {
+                categoryRepository.findById(catId).ifPresent(category -> {
+                    ProductCategoryId pcId = new ProductCategoryId(savedProduct.getId(), catId);
+                    ProductCategory pc = new ProductCategory();
+                    pc.setId(pcId);
+                    pc.setProduct(savedProduct);
+                    pc.setCategory(category);
+                    productCategoryRepository.save(pc);
+                });
+            }
+        }
+
+        return getProductsByIds(List.of(savedProduct.getId())).get(0);
     }
 
     private String generateSlug(String name) {
@@ -119,7 +159,7 @@ public class ProductService {
                 .replaceAll("-+", "-")
                 .trim();
 
-        // Tránh slug trùng nhau
+        //Tranh duplicate slug
         String baseSlug = slug;
         int count = 1;
         while (productRepository.existsBySlug(slug)) {
@@ -809,7 +849,9 @@ public class ProductService {
 
             for (Long catId : request.getCategoryIds()) {
                 categoryRepository.findById(catId).ifPresent(category -> {
+                    ProductCategoryId pcId = new ProductCategoryId(workingProductId, catId);
                     ProductCategory pc = new ProductCategory();
+                    pc.setId(pcId);
                     pc.setProduct(workingProduct);
                     pc.setCategory(category);
                     productCategoryRepository.save(pc);

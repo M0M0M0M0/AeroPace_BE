@@ -106,13 +106,16 @@ public class AdminProductController {
     }
 
     // =========================================================
-    // ADMIN API 7: POST /api/v1/admin/products
+    // ADMIN API 7: POST /api/v1/admin/products/full-create
     // Mục đích:
     // - Tạo mới 1 sản phẩm
     // =========================================================
-    @PostMapping
-    public ProductDetailResponse createProduct(@Valid @RequestBody ProductRequest request) {
-        return productService.createProduct(request);
+    @PostMapping("/full-create")
+    public ResponseEntity<ProductResponse> fullCreateProduct(
+            @RequestBody ProductFullUpdateRequest request
+    ) {
+        ProductResponse result = productService.fullCreateProduct(request);
+        return ResponseEntity.ok(result);
     }
 
     // =========================================================
