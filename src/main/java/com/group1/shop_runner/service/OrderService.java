@@ -11,6 +11,7 @@ import com.group1.shop_runner.enums.CancelType;
 import com.group1.shop_runner.enums.OrderStatus;
 import com.group1.shop_runner.enums.PaymentMethod;
 import com.group1.shop_runner.enums.PaymentStatus;
+import com.group1.shop_runner.event.OrderConfirmedEvent;
 import com.group1.shop_runner.repository.*;
 import com.group1.shop_runner.shared.exception.AppException;
 import com.group1.shop_runner.shared.exception.ErrorCode;
@@ -18,6 +19,7 @@ import com.group1.shop_runner.specification.OrderSpecification;
 import com.stripe.exception.StripeException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -55,6 +57,10 @@ public class OrderService {
 
     @Autowired
     private StripeService stripeService;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
     /**
      * Tạo đơn hàng từ toàn bộ cart của user.
      * Flow: validate input → tạo Order rỗng → duyệt cart → trừ stock → lưu OrderItem → xóa cart.
@@ -204,6 +210,7 @@ public class OrderService {
         order = orderRepository.save(order);
 
 
+
         return order;
     }
     /**
@@ -227,6 +234,7 @@ public class OrderService {
     /**
      * update trang thai payment cua order khi thanh toan thanh cong
      */
+    @Transactional
     public void updatePayment(Long orderId, UpdatePaymentRequest request) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
@@ -252,6 +260,8 @@ public class OrderService {
 
         cartItemRepository.deleteByUserId(order.getUser().getId());
         orderRepository.save(order);
+
+        eventPublisher.publishEvent(new OrderConfirmedEvent(this, order));
     }
     /**
      * Lấy lịch sử đơn hàng của một user, kèm danh sách item trong mỗi đơn.
