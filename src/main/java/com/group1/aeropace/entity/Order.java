@@ -1,0 +1,101 @@
+package com.group1.aeropace.entity;
+
+import com.group1.aeropace.enums.CancelType;
+import com.group1.aeropace.enums.OrderStatus;
+import com.group1.aeropace.enums.PaymentMethod;
+import com.group1.aeropace.enums.PaymentStatus;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "orders")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Column(name = "total_price", nullable = false)
+    private BigDecimal totalPrice;
+
+    @Column(name = "vat", nullable = false)
+    private BigDecimal vat = BigDecimal.ZERO;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private OrderStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentMethod paymentMethod;
+
+    @Column(name = "receiver_name", length = 255)
+    private String receiverName;
+
+    @Column(name = "shipping_address", length = 500)
+    private String shippingAddress;
+
+    @Column(name = "phone_number", length = 20)
+    private String phoneNumber;
+
+    @Column(name = "note", length = 500)
+    private String note;
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    private List<OrderItem> orderItems = new ArrayList<>();
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "ward")
+    private String ward;
+
+    @Column(name = "district")
+    private String district;
+
+    @Column(name = "province")
+    private String province;
+
+    @Column(name = "shipping_method")
+    private String shippingMethod;
+
+    @Column(name = "shipping_fee")
+    private BigDecimal shippingFee;
+
+    private String paymentOrderId;
+    private String paymentTransactionId;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status")
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
+    @Column(name = "order_code", unique = true)
+    private String orderCode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancel_type")
+    private CancelType cancelType;
+
+    @Column(name = "cancel_reason")
+    private String cancelReason;
+
+    @Column(name = "refund_reason")
+    private String refundReason;
+}
