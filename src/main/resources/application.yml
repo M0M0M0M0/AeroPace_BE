@@ -16,4 +16,4 @@ spring:
 app:
   mail:
     from: ${MAIL_USERNAME}
-    from-name: ShopRunner
+    from-name: AeroPace

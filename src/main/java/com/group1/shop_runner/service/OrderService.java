@@ -323,7 +323,7 @@ public class OrderService {
 
         order.setStatus(newStatus);
         order.setUpdatedAt(LocalDateTime.now());
-        if(order.getPaymentStatus() == PaymentStatus.PAID){
+        if(order.getPaymentStatus() == PaymentStatus.PAID && newStatus == OrderStatus.CANCELLED){
             order.setPaymentStatus(PaymentStatus.REFUND_PENDING) ;
         }
         if (newStatus == OrderStatus.CANCELLED) {
@@ -363,11 +363,9 @@ public class OrderService {
             case SHIPPING ->
                     next == OrderStatus.DELIVERED;
 
-            case DELIVERED ->
-                    next == OrderStatus.COMPLETED;
-
             case COMPLETED,
-                 CANCELLED ->
+                 CANCELLED,
+                 DELIVERED->
                     false;
         };
 
@@ -434,6 +432,7 @@ public class OrderService {
         response.setCreatedAt(order.getCreatedAt());
         response.setCancelType(order.getCancelType());
         response.setCancelNote(order.getCancelReason());
+        response.setPaymentStatus(order.getPaymentStatus());
 
         List<OrderItemResponse> itemResponses = order.getOrderItems().stream().map(item -> {
             OrderItemResponse itemResponse = new OrderItemResponse();
@@ -585,5 +584,29 @@ public class OrderService {
         String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String random = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
         return "ORD-" + date + "-" + random;
+    }
+    /**
+     * user confirm nhan hang
+     */
+    @Transactional
+    public void confirmDelivered(String orderCode, Authentication authentication) {
+        Order order = orderRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+        String currentUsername = authentication.getName();
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        if (!order.getUser().getEmail().equals(currentUser.getEmail())) {
+            throw new AppException(ErrorCode.ORDER_ACCESS_DENIED);
+        }
+
+        if (order.getStatus() != OrderStatus.DELIVERED) {
+            throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+
+        order.setStatus(OrderStatus.COMPLETED);
+        order.setUpdatedAt(LocalDateTime.now());
+        orderRepository.save(order);
     }
 }

@@ -2,6 +2,7 @@ package com.group1.shop_runner.dto.order.response;
 
 import com.group1.shop_runner.enums.CancelType;
 import com.group1.shop_runner.enums.OrderStatus;
+import com.group1.shop_runner.enums.PaymentStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -22,4 +23,5 @@ public class OrderListResponse {
     private List<OrderItemResponse> items;
     private CancelType cancelType;
     private String cancelNote;
+    private PaymentStatus paymentStatus;
 }

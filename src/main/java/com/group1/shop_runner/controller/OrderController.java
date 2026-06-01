@@ -46,7 +46,7 @@ public class OrderController {
 
     // =========================================================
     // API 2: Lấy danh sách đơn hàng theo userId
-    // GET /api/orders/user/{userId}
+    // GET /api/v1/orders/user/{userId}
     // Mục đích:
     // - Hiển thị lịch sử mua hàng của user
     // =========================================================
@@ -57,7 +57,7 @@ public class OrderController {
 
     // =========================================================
     // API 3: Lấy chi tiết 1 đơn hàng
-    // GET /api/orders/{orderId}
+    // GET /api/v1/orders/{orderId}
     // Mục đích:
     // - Hiển thị chi tiết đơn hàng
     // - Bao gồm danh sách OrderItem
@@ -70,7 +70,7 @@ public class OrderController {
 
     // =========================================================
     // API 5: Cancel Order
-    // PUT /api/orders/{orderId}/cancel
+    // PUT /api/v1/orders/{orderId}/cancel
     // =========================================================
     @PutMapping("/{orderCode}/cancel")
     public void cancelOrder(@PathVariable String orderCode, Authentication authentication, String cancelNote) {
@@ -78,7 +78,7 @@ public class OrderController {
     }
     // =========================================================
     // API 6: Update Order payment status
-    // PUT /api/orders/{orderId}/payment
+    // PUT /api/v1/orders/{orderId}/payment
     // =========================================================
     @PatchMapping("/{orderId}/payment")
     public ResponseEntity<Void> updatePayment(
@@ -90,11 +90,22 @@ public class OrderController {
     }
     // =========================================================
     // API 7: Get pending order
-    // PUT /api/orders/{orderId}/payment
+    // PUT /api/v1/orders/{orderId}/payment
     // =========================================================
     @GetMapping("/paypal/pending/{userId}")
     public List<PendingOrderResponse> getUserPendingOrder(@PathVariable Long userId){
         return orderService.getUserPendingOrder(userId);
+    }
+    // =========================================================
+    // API 8: User confirm order
+    // PATCH /api/v1/orders/{orderCode}/confirm
+    // =========================================================
+    @PatchMapping("/{orderCode}/confirm")
+    public ResponseEntity<Void> confirmDelivered(
+            @PathVariable String orderCode,
+            Authentication authentication) {
+        orderService.confirmDelivered(orderCode, authentication);
+        return ResponseEntity.ok().build();
     }
 
 }
