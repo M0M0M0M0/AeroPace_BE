@@ -16,7 +16,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findBySlug(String slug);
     boolean existsBySlug(String slug);
     @Query("""
-    SELECT new com.group1.shop_runner.dto.product.response.ProductResponse(
+    SELECT new com.group1.aeropace.dto.product.response.ProductResponse(
         p.id,
         p.name,
         p.slug,
@@ -34,7 +34,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<ProductResponse> getProductsByIds(@Param("ids") List<Long> ids);
 
     @Query("""
-                SELECT new com.group1.shop_runner.dto.product.response.ProductResponse(
+                SELECT new com.group1.aeropace.dto.product.response.ProductResponse(
                     p.id,
                     p.name,
                     p.slug,
@@ -47,13 +47,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                 )
                 FROM Product p
                 LEFT JOIN p.brand b
-                WHERE p.status = com.group1.shop_runner.entity.Product.Status.ACTIVE
+                WHERE p.status = com.group1.aeropace.entity.Product.Status.ACTIVE
             """)
     Page<ProductResponse> getProducts(Pageable pageable);
 
     @Query(
             value = """
-        SELECT DISTINCT new com.group1.shop_runner.dto.product.response.ProductResponse(
+        SELECT DISTINCT new com.group1.aeropace.dto.product.response.ProductResponse(
             p.id, p.name, p.slug, p.description, b.name,
             p.option1Name, p.option2Name, p.option3Name, p.status
         )
@@ -61,7 +61,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         LEFT JOIN p.brand b
         LEFT JOIN p.variants v
         LEFT JOIN p.productCategories pc
-        WHERE p.status = com.group1.shop_runner.entity.Product.Status.ACTIVE
+        WHERE p.status = com.group1.aeropace.entity.Product.Status.ACTIVE
         AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
                OR LOWER(b.name) LIKE LOWER(CONCAT('%', :name, '%'))
                OR EXISTS (
@@ -81,7 +81,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         LEFT JOIN p.brand b
         LEFT JOIN p.variants v
         LEFT JOIN p.productCategories pc
-        WHERE p.status = com.group1.shop_runner.entity.Product.Status.ACTIVE
+        WHERE p.status = com.group1.aeropace.entity.Product.Status.ACTIVE
         AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
                OR LOWER(b.name) LIKE LOWER(CONCAT('%', :name, '%'))
                OR EXISTS (
@@ -106,7 +106,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     );
     // Lấy tất cả sản phẩm không filter status (admin)
     @Query("""
-    SELECT new com.group1.shop_runner.dto.product.response.ProductResponse(
+    SELECT new com.group1.aeropace.dto.product.response.ProductResponse(
         p.id, p.name, p.slug, p.description, b.name,
         p.option1Name, p.option2Name, p.option3Name, p.status
     )
@@ -118,7 +118,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     //Filter cho admin
     @Query(
             value = """
-SELECT DISTINCT new com.group1.shop_runner.dto.product.response.ProductResponse(
+SELECT DISTINCT new com.group1.aeropace.dto.product.response.ProductResponse(
     p.id, p.name, p.slug, p.description, b.name,
     p.option1Name, p.option2Name, p.option3Name, p.status
 )

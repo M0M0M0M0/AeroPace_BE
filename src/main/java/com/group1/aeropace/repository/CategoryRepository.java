@@ -11,7 +11,7 @@ import java.util.Optional;
 public interface CategoryRepository extends JpaRepository<Category,Long> {
     Optional<Category> findByName(String name);
     @Query("""
-    SELECT new com.group1.shop_runner.dto.category.CategoryDto(
+    SELECT new com.group1.aeropace.dto.category.CategoryDto(
         pc.product.id,
         c.id,
         c.name

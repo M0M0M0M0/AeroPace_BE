@@ -13,7 +13,7 @@ public interface ProductImageRepository extends JpaRepository<ProductImage,Long>
     List<ProductImage> findByProductIdOrderByPositionAsc(Long productId);
     List<ProductImage> findByProduct_Id(Long productId);
     @Query("""
-    SELECT new com.group1.shop_runner.dto.product.ProductImageDto(
+    SELECT new com.group1.aeropace.dto.product.ProductImageDto(
         i.id,
         i.product.id,
         i.imageUrl,

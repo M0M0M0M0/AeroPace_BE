@@ -15,7 +15,7 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
     Optional<ProductVariant> findFirstByProductIdAndIsDeletedFalseOrderByIdAsc(Long productId);
 
     @Query("""
-        SELECT new com.group1.shop_runner.dto.product.ProductVariantDto(
+        SELECT new com.group1.aeropace.dto.product.ProductVariantDto(
             v.product.id,
             v.id,
             v.option1Value,

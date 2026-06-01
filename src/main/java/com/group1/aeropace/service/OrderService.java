@@ -436,6 +436,9 @@ public class OrderService {
 
         List<OrderItemResponse> itemResponses = order.getOrderItems().stream().map(item -> {
             OrderItemResponse itemResponse = new OrderItemResponse();
+            itemResponse.setProductId(productVariantRepository.findById(item.getId())
+                    .orElseThrow( () -> new AppException(ErrorCode.VARIANT_NOT_FOUND))
+                    .getProduct().getId());
             itemResponse.setProductVariantId(
                     item.getProductVariant() != null ? item.getProductVariant().getId() : null
             );
