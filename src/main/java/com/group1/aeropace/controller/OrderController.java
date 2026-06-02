@@ -48,8 +48,8 @@ public class OrderController {
     // - Hiển thị lịch sử mua hàng của user
     // =========================================================
     @GetMapping("/user/{userId}")
-    public List<OrderListResponse> getOrdersByUserId(@PathVariable Long userId) {
-        return orderService.getOrdersByUserId(userId);
+    public List<OrderListResponse> getOrdersByUserId(@PathVariable Long userId, Authentication authentication) {
+        return orderService.getOrdersByUserId(userId, authentication);
     }
 
     // =========================================================

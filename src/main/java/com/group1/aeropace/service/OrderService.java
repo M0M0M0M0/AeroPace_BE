@@ -30,6 +30,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -265,18 +266,29 @@ public class OrderService {
     }
     /**
      * Lấy lịch sử đơn hàng của một user, kèm danh sách item trong mỗi đơn.
-     * Mỗi order trigger thêm một query lấy OrderItem — chấp nhận được với lịch sử cá nhân,
-     * nhưng không nên dùng pattern này cho admin list nhiều user.
-     *
      * @throws AppException INVALID_INPUT nếu userId null
      */
     @Transactional(readOnly = true)
-    public List<OrderListResponse> getOrdersByUserId(Long userId) {
+    public List<OrderListResponse> getOrdersByUserId(Long userId, Authentication authentication) {
         if (userId == null) {
             throw new AppException(ErrorCode.INVALID_INPUT);
         }
+        String currentUsername = authentication.getName();
+        User currentUser = userRepository.findByUsername(currentUsername)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        List<Order> orders = orderRepository.findByUserId(userId);
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        boolean isOwner = userId.equals(currentUser.getId());
+
+        if (!isAdmin && !isOwner) {
+            throw new AppException(ErrorCode.ORDER_ACCESS_DENIED);
+        }
+
+        List<Order> orders = orderRepository.findByUserId(userId)
+                .stream().filter( order -> order.getStatus() != OrderStatus.PENDING)
+                .toList();
+
 
         return orders.stream()
                 .filter(order-> order.getCancelType() != CancelType.PAYMENT_REPLACED
