@@ -195,8 +195,7 @@ public class CartService {
                     .orElse(null);
 
             if (existing != null) {
-                int mergedQty = existing.getQuantity() + item.getQuantity();
-                existing.setQuantity(Math.min(mergedQty, variant.getStock()));
+                existing.setQuantity(Math.min(item.getQuantity(), variant.getStock()));
                 existing.setUpdatedAt(LocalDateTime.now());
                 cartItemRepository.save(existing);
             } else {
