@@ -41,6 +41,7 @@ public class CartService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         List<CartItem> cartItems = cartItemRepository.findByUserId(userId);
+
         return mapToCartResponse(user, cartItems);
     }
 
@@ -255,6 +256,7 @@ public class CartService {
                 .findFirst()
                 .map(img -> img.getImageUrl())
                 .orElse(null);
+        boolean isAvailable = !variant.getIsDeleted() && variant.getProduct().getStatus() == Product.Status.ACTIVE;
 
         return new CartItemResponse(
                 cartItem.getId(),
@@ -269,7 +271,8 @@ public class CartService {
                 variant.getStock(),
                 lineTotal,
                 imageUrl,
-                variant.getStock()
+                variant.getStock(),
+                isAvailable
         );
     }
 }
