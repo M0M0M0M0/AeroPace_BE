@@ -1,4 +1,4 @@
-package com.group1.aeropace.dto.admindashboard.response;
+package com.group1.aeropace.dto.admin.response;
 
 import lombok.Builder;
 import lombok.Data;

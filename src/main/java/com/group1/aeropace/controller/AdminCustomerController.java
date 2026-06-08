@@ -1,6 +1,7 @@
 package com.group1.aeropace.controller;
 
 import com.group1.aeropace.dto.admin.request.AdminCustomerUpdateRequest;
+import com.group1.aeropace.dto.admin.response.AdminCustomerDetailResponse;
 import com.group1.aeropace.dto.admin.response.AdminCustomerResponse;
 import com.group1.aeropace.service.AdminCustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +30,8 @@ public class AdminCustomerController {
     // GET /api/v1/admin/customers/{userId}
     // =========================================================
     @GetMapping("/{userId}")
-    public AdminCustomerResponse getCustomerById(@PathVariable Long userId) {
-        return adminCustomerService.getCustomerById(userId);
+    public AdminCustomerDetailResponse getCustomerDetail(@PathVariable Long userId) {
+        return adminCustomerService.getCustomerDetail(userId);
     }
 
     // =========================================================

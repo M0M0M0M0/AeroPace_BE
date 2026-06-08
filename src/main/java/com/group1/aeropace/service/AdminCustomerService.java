@@ -1,6 +1,7 @@
 package com.group1.aeropace.service;
 
 import com.group1.aeropace.dto.admin.request.AdminCustomerUpdateRequest;
+import com.group1.aeropace.dto.admin.response.AdminCustomerDetailResponse;
 import com.group1.aeropace.dto.admin.response.AdminCustomerResponse;
 import com.group1.aeropace.entity.CustomerProfile;
 import com.group1.aeropace.entity.User;
@@ -38,11 +39,34 @@ public class AdminCustomerService {
     // =========================================================
     // API 2: Lấy chi tiết khách hàng theo userId
     // =========================================================
-    public AdminCustomerResponse getCustomerById(Long userId) {
+    public AdminCustomerDetailResponse getCustomerDetail(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        return mapToResponse(user);
+        CustomerProfile profile = customerProfileRepository
+                .findByUser_Id(userId)
+                .orElse(null);
+
+        return AdminCustomerDetailResponse.builder()
+                // User
+                .id(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .status(user.getStatus())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                // Profile
+                .fullName(profile != null ? profile.getFullName() : null)
+                .phoneNumber(profile != null ? profile.getPhoneNumber() : null)
+                .gender(profile != null ? profile.getGender() : null)
+                .dob(profile != null ? profile.getDob() : null)
+                .address(profile != null ? profile.getAddress() : null)
+                .ward(profile != null ? profile.getWard() : null)
+                .district(profile != null ? profile.getDistrict() : null)
+                .province(profile != null ? profile.getProvince() : null)
+                .profileCreatedAt(profile != null ? profile.getCreatedAt() : null)
+                .profileUpdatedAt(profile != null ? profile.getUpdatedAt() : null)
+                .build();
     }
 
     // =========================================================

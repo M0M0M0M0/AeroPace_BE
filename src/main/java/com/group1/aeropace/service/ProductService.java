@@ -762,6 +762,7 @@ public class ProductService {
                     if (oldVariant != null) {
                         oldVariant.setIsDeleted(true);
                         productVariantRepository.save(oldVariant);
+                        productVariantRepository.flush();
                     }
                     createVariantForProduct(workingProduct, variantItem);
 
@@ -772,6 +773,7 @@ public class ProductService {
                         if (existing != null) {
                             existing.setIsDeleted(true);
                             productVariantRepository.save(existing);
+                            productVariantRepository.flush();
                         }
                         createVariantForProduct(workingProduct, variantItem);
                     } else {
@@ -827,7 +829,7 @@ public class ProductService {
             }
 
             // Neu product bi archive, copy toan bo image sang product moi
-            if (productHasOrder) {
+            if (productHasOrder && productInfoChanged) {
                 for (ProductFullUpdateRequest.ImageItem imgItem : request.getImages()) {
                     if (imgItem.getImageUrl() != null && !imgItem.getImageUrl().isBlank()) {
                         ProductImage newImage = new ProductImage();

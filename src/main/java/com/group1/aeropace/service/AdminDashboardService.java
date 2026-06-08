@@ -1,7 +1,7 @@
 package com.group1.aeropace.service;
 
-import com.group1.aeropace.dto.admindashboard.response.LowStockResponse;
-import com.group1.aeropace.dto.admindashboard.response.NewCustomerResponse;
+import com.group1.aeropace.dto.admin.response.LowStockResponse;
+import com.group1.aeropace.dto.admin.response.NewCustomerResponse;
 import com.group1.aeropace.repository.CustomerProfileRepository;
 import com.group1.aeropace.repository.ProductVariantRepository;
 import com.group1.aeropace.repository.UserRepository;
