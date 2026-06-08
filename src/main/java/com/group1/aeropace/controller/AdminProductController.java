@@ -54,10 +54,10 @@ public class AdminProductController {
     // Mục đích:
     // - Lấy nhiều sản phẩm theo list id kể cả DELETED
     // =========================================================
-    @GetMapping("/by-ids")
-    public List<ProductResponse> getProductsByIdsForAdmin(@RequestParam List<Long> ids) {
-        return productService.getProductsByIds(ids);
-    }
+//    @GetMapping("/by-ids")
+//    public List<ProductResponse> getProductsByIdsForAdmin(@RequestParam List<Long> ids) {
+//        return productService.getProductsByIds(ids);
+//    }
 
     // =========================================================
     // ADMIN API 4: GET /api/v1/admin/products/filter

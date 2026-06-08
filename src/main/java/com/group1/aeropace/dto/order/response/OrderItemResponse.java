@@ -14,7 +14,9 @@ public class OrderItemResponse {
     private BigDecimal price;
 
     private String productName;
-    private String variantName;
+    private String option1_value;
+    private String option2_value;
+    private String option3_value;
     private String sku;
     private String productImgUrl;
     private String note;

@@ -448,19 +448,24 @@ public class OrderService {
 
         List<OrderItemResponse> itemResponses = order.getOrderItems().stream().map(item -> {
             OrderItemResponse itemResponse = new OrderItemResponse();
-            itemResponse.setProductId(productVariantRepository.findById(item.getId())
-                    .orElseThrow( () -> new AppException(ErrorCode.VARIANT_NOT_FOUND))
-                    .getProduct().getId());
-            itemResponse.setProductVariantId(
-                    item.getProductVariant() != null ? item.getProductVariant().getId() : null
-            );
+
+            ProductVariant variant = item.getProductVariant() != null
+                    ? productVariantRepository.findById(item.getProductVariant().getId())
+                      .orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND))
+                    : null;
+
+            itemResponse.setProductId(variant != null ? variant.getProduct().getId() : null);
+            itemResponse.setProductVariantId(variant != null ? variant.getId() : null);
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
             itemResponse.setProductName(item.getProductName());
-            itemResponse.setVariantName(item.getVariantName());
+            itemResponse.setOption1_value(variant != null ? variant.getOption1Value() : null);
+            itemResponse.setOption2_value(variant != null ? variant.getOption2Value() : null);
+            itemResponse.setOption3_value(variant != null ? variant.getOption3Value() : null);
             itemResponse.setSku(item.getSku());
             itemResponse.setProductImgUrl(item.getProductImgUrl());
             itemResponse.setNote(item.getNote());
+
             return itemResponse;
         }).toList();
 
@@ -493,12 +498,18 @@ public class OrderService {
 
         List<OrderItemResponse> items = orderItems.stream().map(item -> {
             OrderItemResponse itemResponse = new OrderItemResponse();
-            itemResponse.setProductVariantId(item.getProductVariant().getId());
+            ProductVariant variant = item.getProductVariant() != null
+                    ? productVariantRepository.findById(item.getProductVariant().getId())
+                      .orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND))
+                    : null;
+            itemResponse.setProductId(variant != null ? variant.getProduct().getId() : null);
+            itemResponse.setProductVariantId(variant != null ? variant.getId() : null);
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
-            // Đọc từ snapshot — không lazy-load product để tránh thay đổi sau đặt hàng ảnh hưởng response
             itemResponse.setProductName(item.getProductName());
-            itemResponse.setVariantName(item.getVariantName());
+            itemResponse.setOption1_value(variant != null ? variant.getOption1Value() : null);
+            itemResponse.setOption2_value(variant != null ? variant.getOption2Value() : null);
+            itemResponse.setOption3_value(variant != null ? variant.getOption3Value() : null);
             itemResponse.setSku(item.getSku());
             itemResponse.setProductImgUrl(item.getProductImgUrl());
             itemResponse.setNote(item.getNote());
@@ -578,7 +589,15 @@ public class OrderService {
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
             itemResponse.setProductName(item.getProductName());
-            itemResponse.setVariantName(item.getVariantName());
+            itemResponse.setOption1_value(productVariantRepository.findById(item.getId())
+                    .orElseThrow( () -> new AppException(ErrorCode.VARIANT_NOT_FOUND))
+                    .getOption1Value());
+            itemResponse.setOption2_value(productVariantRepository.findById(item.getId())
+                    .orElseThrow( () -> new AppException(ErrorCode.VARIANT_NOT_FOUND))
+                    .getOption2Value());
+            itemResponse.setOption3_value(productVariantRepository.findById(item.getId())
+                    .orElseThrow( () -> new AppException(ErrorCode.VARIANT_NOT_FOUND))
+                    .getOption3Value());
             itemResponse.setSku(item.getSku());
 
             itemResponse.setProductImgUrl(item.getProductImgUrl());
