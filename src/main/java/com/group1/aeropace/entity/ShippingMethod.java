@@ -32,4 +32,5 @@ public class ShippingMethod {
     public enum Status {
         ACTIVE, DISABLE
     }
+
 }

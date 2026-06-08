@@ -42,4 +42,15 @@ public class User {
     private LocalDateTime updatedAt;
     @Column(name = "status", length = 20)
     private String status;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

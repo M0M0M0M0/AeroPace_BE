@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -232,6 +233,7 @@ public class ProductService {
         variant.setPrice(request.getPrice());
         variant.setStock(request.getStock());
         variant.setSku(request.getSku());
+        variant.setUpdatedAt(LocalDateTime.now());
 
         ProductVariant updatedVariant = productVariantRepository.save(variant);
 
@@ -247,6 +249,7 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         product.setStatus(Product.Status.DELETED);
+        product.setUpdatedAt(LocalDateTime.now());
         productRepository.save(product);
 
     }
@@ -267,6 +270,7 @@ public class ProductService {
         boolean hasOrder = orderItemRepository.existsByProductVariantId(id);
         if (hasOrder) {
             variant.setIsDeleted(true);
+            variant.setUpdatedAt(LocalDateTime.now());
             productVariantRepository.save(variant);
         } else {
             productVariantRepository.delete(variant);
@@ -420,8 +424,7 @@ public class ProductService {
      * Page size cố định 20.
      */
     public Map<String, Object> getAllProductDetail(int page) {
-        Pageable pageable = PageRequest.of(page, 20);
-        Page<ProductResponse> productPage = productRepository.getProducts(pageable);
+        Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "updatedAt"));        Page<ProductResponse> productPage = productRepository.getProducts(pageable);
         List<ProductResponse> products = productPage.getContent();
 
         List<Long> ids = products.stream().map(ProductResponse::getId).toList();
@@ -460,8 +463,7 @@ public class ProductService {
             BigDecimal maxPrice,
             int page
     ) {
-        Pageable pageable = PageRequest.of(page, 20);
-
+        Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "updatedAt"));
         // Normalize: list rỗng hoặc string blank → null để query không bị filter sai
         if (brandIds != null && brandIds.isEmpty()) brandIds = null;
         if (categoryIds != null && categoryIds.isEmpty()) categoryIds = null;
@@ -507,6 +509,7 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         product.setStatus(status);
+        product.setUpdatedAt(LocalDateTime.now());
         productRepository.save(product);
     }
 
@@ -523,12 +526,11 @@ public class ProductService {
     }
 
     /**
-     * Lấy toàn bộ product phân trang cho admin, bao gồm cả product đã DELETED.
+     * Lấy toàn bộ product phân trang cho admin, khong bao gồm product đã DELETED.
      * Page size cố định 20.
      */
     public Map<String, Object> getAllProductDetailForAdmin(int page) {
-        Pageable pageable = PageRequest.of(page, 20);
-        Page<ProductResponse> productPage = productRepository.getProductsForAdmin(pageable);
+        Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "updatedAt"));        Page<ProductResponse> productPage = productRepository.getProductsForAdmin(pageable);
         List<ProductResponse> products = productPage.getContent();
         List<Long> ids = products.stream().map(ProductResponse::getId).toList();
 
@@ -572,13 +574,15 @@ public class ProductService {
             Integer stockMax,
             int page
     ) {
-        Pageable pageable = PageRequest.of(page, 20);
-
+        Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "updatedAt"));
         if (brandIds != null && brandIds.isEmpty()) brandIds = null;
         if (categoryIds != null && categoryIds.isEmpty()) categoryIds = null;
         if (statuses != null && statuses.isEmpty()) statuses = null;
         if (name != null && name.isBlank()) name = null;
         if (sku != null && sku.isBlank()) sku = null;
+        if (statuses == null || statuses.isEmpty()) {
+            statuses = List.of(Product.Status.ACTIVE, Product.Status.DRAFT, Product.Status.ARCHIVED);
+        }
 
         Page<ProductResponse> productPage = productRepository.filterProductsForAdmin(
                 name, brandIds, categoryIds, minPrice, maxPrice, statuses,
@@ -701,8 +705,8 @@ public class ProductService {
         Product workingProduct;
 
         if (productHasOrder && productInfoChanged) {
-            //ARCHIVE product cũ
-            oldProduct.setStatus(Product.Status.ARCHIVED);
+            //Soft Delete product cũ
+            oldProduct.setStatus(Product.Status.DELETED);
             productRepository.save(oldProduct);
 
             //Product mới
