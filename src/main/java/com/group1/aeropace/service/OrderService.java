@@ -147,7 +147,7 @@ public class OrderService {
         for (CartItem cartItem : cartItems) {
             ProductVariant variant = cartItem.getProductVariant();
 
-            // Re-fetch từ DB để đảm bảo variant/product chưa bị xóa sau khi user thêm vào cart
+            // Refetch de dam bao variant khong bi xoa sau khi dang o trong cart
             if (variant == null) {
                 throw new AppException(ErrorCode.VARIANT_NOT_FOUND);
             }
@@ -180,7 +180,6 @@ public class OrderService {
 
             // Snapshot tên/variant tại thời điểm đặt hàng — tránh bị ảnh hưởng nếu product thay đổi sau này
             orderItem.setProductName(variant.getProduct().getName());
-            orderItem.setVariantName(buildVariantName(variant));
             orderItem.setSku(variant.getSku() != null ? variant.getSku() : "");
             orderItem.setProductImgUrl(variant.getProduct().getImages()
                     .stream()
