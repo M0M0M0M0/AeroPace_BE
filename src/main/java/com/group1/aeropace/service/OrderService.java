@@ -175,6 +175,7 @@ public class OrderService {
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
             orderItem.setProductVariant(variant);
+            orderItem.setVariantName(buildVariantName(variant));
             orderItem.setQuantity(quantity);
             orderItem.setPrice(price);
 
@@ -458,9 +459,7 @@ public class OrderService {
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
             itemResponse.setProductName(item.getProductName());
-            itemResponse.setOption1_value(variant != null ? variant.getOption1Value() : null);
-            itemResponse.setOption2_value(variant != null ? variant.getOption2Value() : null);
-            itemResponse.setOption3_value(variant != null ? variant.getOption3Value() : null);
+            itemResponse.setVariantName(item.getVariantName());
             itemResponse.setSku(item.getSku());
             itemResponse.setProductImgUrl(item.getProductImgUrl());
             itemResponse.setNote(item.getNote());
@@ -506,9 +505,7 @@ public class OrderService {
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
             itemResponse.setProductName(item.getProductName());
-            itemResponse.setOption1_value(variant != null ? variant.getOption1Value() : null);
-            itemResponse.setOption2_value(variant != null ? variant.getOption2Value() : null);
-            itemResponse.setOption3_value(variant != null ? variant.getOption3Value() : null);
+            itemResponse.setVariantName(item.getVariantName());
             itemResponse.setSku(item.getSku());
             itemResponse.setProductImgUrl(item.getProductImgUrl());
             itemResponse.setNote(item.getNote());
@@ -588,15 +585,7 @@ public class OrderService {
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
             itemResponse.setProductName(item.getProductName());
-            itemResponse.setOption1_value(productVariantRepository.findById(item.getId())
-                    .orElseThrow( () -> new AppException(ErrorCode.VARIANT_NOT_FOUND))
-                    .getOption1Value());
-            itemResponse.setOption2_value(productVariantRepository.findById(item.getId())
-                    .orElseThrow( () -> new AppException(ErrorCode.VARIANT_NOT_FOUND))
-                    .getOption2Value());
-            itemResponse.setOption3_value(productVariantRepository.findById(item.getId())
-                    .orElseThrow( () -> new AppException(ErrorCode.VARIANT_NOT_FOUND))
-                    .getOption3Value());
+            itemResponse.setVariantName(item.getVariantName());
             itemResponse.setSku(item.getSku());
 
             itemResponse.setProductImgUrl(item.getProductImgUrl());

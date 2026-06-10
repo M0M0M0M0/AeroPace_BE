@@ -6,6 +6,8 @@ import com.group1.aeropace.dto.product.ProductVariantDto;
 import com.group1.aeropace.entity.Product;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
@@ -27,9 +29,15 @@ public class ProductResponse {
     private List<ProductVariantDto> variants;
     private List<CategoryDto> categories;
 
+    private BigDecimal averageRating;
+    private Integer reviewCount;
+
+    private Long totalSold;
+
+
     //     constructor dùng cho JPQL
     public ProductResponse(Long id, String name, String slug, String description,
-                           String brand, String option1Name, String option2Name, String option3Name,Product.Status status ) {
+                           String brand, String option1Name, String option2Name, String option3Name,Product.Status status, BigDecimal averageRating, Integer reviewCount ) {
         this.id = id;
         this.name = name;
         this.slug = slug;
@@ -39,5 +47,7 @@ public class ProductResponse {
         this.option2Name = option2Name;
         this.option3Name = option3Name;
         this.status = status;
+        this.averageRating = averageRating;
+        this.reviewCount = reviewCount;
     }
 }

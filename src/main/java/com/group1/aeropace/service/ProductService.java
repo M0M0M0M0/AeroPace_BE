@@ -424,7 +424,8 @@ public class ProductService {
      * Page size cố định 20.
      */
     public Map<String, Object> getAllProductDetail(int page) {
-        Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "updatedAt"));        Page<ProductResponse> productPage = productRepository.getProducts(pageable);
+        Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        Page<ProductResponse> productPage = productRepository.getProducts(pageable);
         List<ProductResponse> products = productPage.getContent();
 
         List<Long> ids = products.stream().map(ProductResponse::getId).toList();
@@ -461,7 +462,11 @@ public class ProductService {
             List<Long> categoryIds,
             BigDecimal minPrice,
             BigDecimal maxPrice,
-            int page
+            int page,
+            BigDecimal minRating,
+            BigDecimal maxRating,
+            Integer minReviewCount,
+            Integer maxReviewCount
     ) {
         Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "updatedAt"));
         // Normalize: list rỗng hoặc string blank → null để query không bị filter sai
@@ -470,7 +475,7 @@ public class ProductService {
         if (name != null && name.isBlank()) name = null;
 
         Page<ProductResponse> productPage = productRepository.filterProducts(
-                name, brandIds, categoryIds, minPrice, maxPrice, pageable
+                name, brandIds, categoryIds, minPrice, maxPrice, pageable, minRating, maxRating, minReviewCount, maxReviewCount
         );
 
         List<ProductResponse> products = productPage.getContent();
@@ -572,7 +577,15 @@ public class ProductService {
             String sku,
             Integer stockMin,
             Integer stockMax,
-            int page
+            int page,
+            BigDecimal ratingMin,
+            BigDecimal ratingMax,
+            Integer reviewCountMin,
+            Integer reviewCountMax,
+            Boolean sortByBestSeller,
+            LocalDate dateFrom,
+            LocalDate dateTo,
+            Integer limit
     ) {
         Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "updatedAt"));
         if (brandIds != null && brandIds.isEmpty()) brandIds = null;
@@ -583,10 +596,60 @@ public class ProductService {
         if (statuses == null || statuses.isEmpty()) {
             statuses = List.of(Product.Status.ACTIVE, Product.Status.DRAFT, Product.Status.ARCHIVED);
         }
+        if (Boolean.TRUE.equals(sortByBestSeller) && dateFrom != null && dateTo != null) {
+            LocalDateTime from = dateFrom.atStartOfDay();
+            LocalDateTime to   = dateTo.atTime(23, 59, 59);
+            int resolvedLimit  = (limit != null && limit >= 1 && limit <= 100) ? limit : 10;
+
+            // Lấy ranked productIds từ OrderItem
+            List<Object[]> rows = orderItemRepository.findBestSellerProductIds(from, to, resolvedLimit);
+            if (rows.isEmpty()) return Map.of("products", List.of(), "totalPages", 0);
+
+            List<Long> rankedIds = rows.stream()
+                    .map(r -> ((Number) r[0]).longValue())
+                    .toList();
+
+            Map<Long, Long> soldMap = rows.stream()
+                    .collect(Collectors.toMap(
+                            r -> ((Number) r[0]).longValue(),
+                            r -> ((Number) r[1]).longValue()
+                    ));
+            final List<Product.Status> finalStatuses = statuses;
+            final String finalName = name;
+            final List<Long> finalBrandIds = brandIds;
+            final List<Long> finalCategoryIds = categoryIds;
+            final String finalSku = sku;
+
+            // Query khong paginate — rankedIds sort lai
+            List<ProductResponse> filtered = productRepository.filterProductsForAdminByIds(
+                    finalName, finalBrandIds, finalCategoryIds,
+                    minPrice, maxPrice, finalStatuses,
+                    variantId, finalSku, stockMin, stockMax,
+                    ratingMin, ratingMax, reviewCountMin, reviewCountMax,
+                    rankedIds  // whitelist
+            );
+
+            if (filtered.isEmpty()) return Map.of("products", List.of(), "totalPages", 0);
+
+            List<Long> ids = filtered.stream().map(ProductResponse::getId).toList();
+            enrichProducts(filtered, ids);
+
+            // gan them totalsold
+            Map<Long, ProductResponse> productMap = filtered.stream()
+                    .collect(Collectors.toMap(ProductResponse::getId, p -> p));
+
+            List<ProductResponse> result = rankedIds.stream()
+                    .map(productMap::get)
+                    .filter(Objects::nonNull)
+                    .peek(p -> p.setTotalSold(soldMap.get(p.getId())))
+                    .toList();
+
+            return Map.of("products", result, "totalPages", 1);
+        }
 
         Page<ProductResponse> productPage = productRepository.filterProductsForAdmin(
                 name, brandIds, categoryIds, minPrice, maxPrice, statuses,
-                productId, variantId, sku, stockMin, stockMax, pageable
+                productId, variantId, sku, stockMin, stockMax, pageable, ratingMin, ratingMax, reviewCountMin, reviewCountMax
         );
 
         List<ProductResponse> products = productPage.getContent();
@@ -612,6 +675,22 @@ public class ProductService {
                 "products", products,
                 "totalPages", productPage.getTotalPages()
         );
+    }
+    // Helper extract
+    private void enrichProducts(List<ProductResponse> products, List<Long> ids) {
+        var images     = productImageRepository.getImagesByProductIds(ids);
+        var variants   = productVariantRepository.getVariantsByProductIds(ids);
+        var categories = categoryRepository.getByProductIds(ids);
+
+        Map<Long, List<ProductImageDto>>   imageMap    = images.stream().collect(Collectors.groupingBy(ProductImageDto::getProductId));
+        Map<Long, List<ProductVariantDto>> variantMap  = variants.stream().collect(Collectors.groupingBy(ProductVariantDto::getProductId));
+        Map<Long, List<CategoryDto>>       categoryMap = categories.stream().collect(Collectors.groupingBy(CategoryDto::getProductId));
+
+        for (ProductResponse p : products) {
+            p.setImages(imageMap.getOrDefault(p.getId(), List.of()));
+            p.setVariants(variantMap.getOrDefault(p.getId(), List.of()));
+            p.setCategories(categoryMap.getOrDefault(p.getId(), List.of()));
+        }
     }
 
     /**

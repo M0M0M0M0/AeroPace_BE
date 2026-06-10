@@ -85,10 +85,14 @@ public class ProductController {
             @RequestParam(required = false) List<Long> categories,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(defaultValue = "0") int page
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) BigDecimal minRating,
+            @RequestParam(required = false) BigDecimal maxRating,
+            @RequestParam(required = false) Integer minReviewCount,
+            @RequestParam(required = false) Integer maxReviewCount
     ) {
         return productService.filterProducts(
-                name, brands, categories, minPrice, maxPrice, page
+                name, brands, categories, minPrice, maxPrice, page, minRating, maxRating, minReviewCount, maxReviewCount
         );
     }
 }

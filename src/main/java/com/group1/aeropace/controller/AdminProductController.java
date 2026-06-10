@@ -77,11 +77,20 @@ public class AdminProductController {
             @RequestParam(required = false) String sku,
             @RequestParam(required = false) Integer stockMin,
             @RequestParam(required = false) Integer stockMax,
-            @RequestParam(defaultValue = "0") int page
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) BigDecimal ratingMin,
+            @RequestParam(required = false) BigDecimal ratingMax,
+            @RequestParam(required = false) Integer reviewCountMin,
+            @RequestParam(required = false) Integer reviewCountMax,
+            @RequestParam(required = false) Boolean sortByBestSeller,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
+            @RequestParam(required = false) Integer limit
     ) {
         return productService.filterProductsForAdmin(
                 name, brands, categories, minPrice, maxPrice, statuses,
-                productId, variantId, sku, stockMin, stockMax, page
+                productId, variantId, sku, stockMin, stockMax, page, ratingMin, ratingMax,
+                reviewCountMin, reviewCountMax,sortByBestSeller, dateFrom, dateTo, limit
         );
     }
 
@@ -189,22 +198,11 @@ public class AdminProductController {
         productService.updateProductStatus(id, status);
         return "Update product status successfully";
     }
-    // =========================================================
-    // ADMIN API 14: GET /api/v1/admin/products/best-sellers
-    // Mục đích:
-    // - Lay san pham ban chay
-    // =========================================================
-    @GetMapping("/best-sellers")
-    public ResponseEntity<List<BestSellerResponse>> getBestSellers(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
-            @RequestParam(defaultValue = "10") int limit
-    ) {
-        if (limit < 1 || limit > 100) limit = 10;
-        List<BestSellerResponse> result = productService.getBestSellers(dateFrom, dateTo, limit);
-        return ResponseEntity.ok(result);
-    }
 
+    // =========================================================
+    //
+    //
+    // =========================================================
     @PutMapping("/{id}/full-update")
     public ResponseEntity<ProductResponse> fullUpdateProduct(
             @PathVariable Long id,

@@ -25,7 +25,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         p.option1Name,
         p.option2Name,
         p.option3Name,
-        p.status
+        p.status,
+        p.averageRating,
+        p.reviewCount
     )
     FROM Product p
     LEFT JOIN p.brand b
@@ -43,7 +45,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                     p.option1Name,
                     p.option2Name,
                     p.option3Name,
-                    p.status
+                    p.status,
+                    p.averageRating,
+                    p.reviewCount
                 )
                 FROM Product p
                 LEFT JOIN p.brand b
@@ -55,7 +59,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             value = """
         SELECT DISTINCT new com.group1.aeropace.dto.product.response.ProductResponse(
             p.id, p.name, p.slug, p.description, b.name,
-            p.option1Name, p.option2Name, p.option3Name, p.status
+            p.option1Name, p.option2Name, p.option3Name, p.status, p.averageRating, p.reviewCount
         )
         FROM Product p
         LEFT JOIN p.brand b
@@ -74,6 +78,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         AND (:categoryIds IS NULL OR pc.category.id IN :categoryIds)
         AND (:minPrice IS NULL OR v.price >= :minPrice)
         AND (:maxPrice IS NULL OR v.price <= :maxPrice)
+        AND (:minRating IS NULL OR v.price >= :minRating)
+        AND (:maxRating IS NULL OR v.price <= :maxRating)
+        AND (:minReviewCount IS NULL OR v.price >= :minReviewCount)
+        AND (:maxReviewCount IS NULL OR v.price <= :maxReviewCount)
+        
     """,
             countQuery = """
         SELECT COUNT(DISTINCT p.id)
@@ -94,6 +103,10 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         AND (:categoryIds IS NULL OR pc.category.id IN :categoryIds)
         AND (:minPrice IS NULL OR v.price >= :minPrice)
         AND (:maxPrice IS NULL OR v.price <= :maxPrice)
+        AND (:minRating IS NULL OR v.price >= :minRating)
+        AND (:maxRating IS NULL OR v.price <= :maxRating)
+        AND (:minReviewCount IS NULL OR v.price >= :minReviewCount)
+        AND (:maxReviewCount IS NULL OR v.price <= :maxReviewCount)
     """
     )
     Page<ProductResponse> filterProducts(
@@ -102,13 +115,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("categoryIds") List<Long> categoryIds,
             @Param("minPrice") BigDecimal minPrice,
             @Param("maxPrice") BigDecimal maxPrice,
-            Pageable pageable
+            Pageable pageable,
+            @Param("minRating") BigDecimal minRating,
+            @Param("maxRating") BigDecimal maxRating,
+            @Param("minReviewCount") Integer minReviewCount,
+            @Param("maxReviewCount") Integer maxReviewCount
     );
     // Lấy tất cả sản phẩm không filter status (admin)
     @Query("""
     SELECT new com.group1.aeropace.dto.product.response.ProductResponse(
         p.id, p.name, p.slug, p.description, b.name,
-        p.option1Name, p.option2Name, p.option3Name, p.status
+        p.option1Name, p.option2Name, p.option3Name, p.status, p.averageRating, p.reviewCount
     )
     FROM Product p
     LEFT JOIN p.brand b
@@ -120,7 +137,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             value = """
 SELECT DISTINCT new com.group1.aeropace.dto.product.response.ProductResponse(
     p.id, p.name, p.slug, p.description, b.name,
-    p.option1Name, p.option2Name, p.option3Name, p.status
+    p.option1Name, p.option2Name, p.option3Name, p.status, p.averageRating, p.reviewCount
 )
 FROM Product p
 LEFT JOIN p.brand b
@@ -156,6 +173,10 @@ AND (:stockMax IS NULL OR (
     SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
     WHERE pv2.product = p AND pv2.isDeleted = false
 ) <= :stockMax)
+AND (:ratingMin IS NULL OR p.averageRating >= :ratingMin)
+AND (:ratingMax IS NULL OR p.averageRating <= :ratingMax)
+AND (:reviewCountMin IS NULL OR p.reviewCount >= :reviewCountMin)
+AND (:reviewCountMax IS NULL OR p.reviewCount <= :reviewCountMax)
 """,
             countQuery = """
 SELECT COUNT(DISTINCT p.id)
@@ -193,6 +214,10 @@ AND (:stockMax IS NULL OR (
     SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
     WHERE pv2.product = p AND pv2.isDeleted = false
 ) <= :stockMax)
+AND (:ratingMin IS NULL OR p.averageRating >= :ratingMin)
+AND (:ratingMax IS NULL OR p.averageRating <= :ratingMax)
+AND (:reviewCountMin IS NULL OR p.reviewCount >= :reviewCountMin)
+AND (:reviewCountMax IS NULL OR p.reviewCount <= :reviewCountMax)
 """
     )
     Page<ProductResponse> filterProductsForAdmin(
@@ -207,6 +232,64 @@ AND (:stockMax IS NULL OR (
             @Param("sku") String sku,
             @Param("stockMin") Integer stockMin,
             @Param("stockMax") Integer stockMax,
-            Pageable pageable
+            Pageable pageable,
+            @Param("ratingMin") BigDecimal ratingMin,
+            @Param("ratingMax") BigDecimal ratingMax,
+            @Param("reviewCountMin") Integer reviewCountMin,
+            @Param("reviewCountMax") Integer reviewCountMax
+    );
+
+    @Query("""
+SELECT DISTINCT new com.group1.aeropace.dto.product.response.ProductResponse(
+    p.id, p.name, p.slug, p.description, b.name,
+    p.option1Name, p.option2Name, p.option3Name, p.status, p.averageRating, p.reviewCount
+)
+FROM Product p
+LEFT JOIN p.brand b
+LEFT JOIN p.variants v
+LEFT JOIN p.productCategories pc
+WHERE p.id IN :productIds
+AND (:name IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :name, '%'))
+       OR LOWER(b.name) LIKE LOWER(CONCAT('%', :name, '%')))
+AND (:brandIds IS NULL OR b.id IN :brandIds)
+AND (:categoryIds IS NULL OR pc.category.id IN :categoryIds)
+AND (:minPrice IS NULL OR v.price >= :minPrice)
+AND (:maxPrice IS NULL OR v.price <= :maxPrice)
+AND (:statuses IS NULL OR p.status IN :statuses)
+AND (:variantId IS NULL OR EXISTS (
+    SELECT 1 FROM ProductVariant pv WHERE pv.product = p AND pv.id = :variantId
+))
+AND (:sku IS NULL OR EXISTS (
+    SELECT 1 FROM ProductVariant pv WHERE pv.product = p AND LOWER(pv.sku) LIKE LOWER(CONCAT('%', :sku, '%'))
+))
+AND (:stockMin IS NULL OR (
+    SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
+    WHERE pv2.product = p AND pv2.isDeleted = false
+) >= :stockMin)
+AND (:stockMax IS NULL OR (
+    SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
+    WHERE pv2.product = p AND pv2.isDeleted = false
+) <= :stockMax)
+AND (:ratingMin IS NULL OR p.averageRating >= :ratingMin)
+AND (:ratingMax IS NULL OR p.averageRating <= :ratingMax)
+AND (:reviewCountMin IS NULL OR p.reviewCount >= :reviewCountMin)
+AND (:reviewCountMax IS NULL OR p.reviewCount <= :reviewCountMax)
+""")
+    List<ProductResponse> filterProductsForAdminByIds(
+            @Param("name") String name,
+            @Param("brandIds") List<Long> brandIds,
+            @Param("categoryIds") List<Long> categoryIds,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("statuses") List<Product.Status> statuses,
+            @Param("variantId") Long variantId,
+            @Param("sku") String sku,
+            @Param("stockMin") Integer stockMin,
+            @Param("stockMax") Integer stockMax,
+            @Param("ratingMin") BigDecimal ratingMin,
+            @Param("ratingMax") BigDecimal ratingMax,
+            @Param("reviewCountMin") Integer reviewCountMin,
+            @Param("reviewCountMax") Integer reviewCountMax,
+            @Param("productIds") List<Long> productIds
     );
 }

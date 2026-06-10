@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -75,6 +77,12 @@ public class Product {
             return Status.valueOf(value.toUpperCase());
         }
     }
+
+    @Column(name = "average_rating")
+    private BigDecimal averageRating = BigDecimal.ZERO;
+
+    @Column(name = "review_count")
+    private Integer reviewCount = 0;
 
     @PrePersist
     protected void onCreate() {
