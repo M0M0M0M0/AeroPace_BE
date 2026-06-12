@@ -62,6 +62,9 @@ public class OrderService {
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
+    @Autowired
+    private ReviewService reviewService;
+
     /**
      * Tạo đơn hàng từ toàn bộ cart của user.
      * Flow: validate input → tạo Order rỗng → duyệt cart → trừ stock → lưu OrderItem → xóa cart.
@@ -630,5 +633,22 @@ public class OrderService {
         order.setStatus(OrderStatus.COMPLETED);
         order.setUpdatedAt(LocalDateTime.now());
         orderRepository.save(order);
+
+        //tao pending review
+        List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
+
+        items.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        item -> item.getProductVariant().getProduct().getId(),
+                        item -> item,
+                        (existing, duplicate) -> existing
+                ))
+                .values()
+                .forEach(item -> {
+                    ProductVariant variant = item.getProductVariant();
+                    Product product = variant.getProduct();
+                    reviewService.createPendingReview(order, product, variant, order.getUser());
+                });
     }
+
 }

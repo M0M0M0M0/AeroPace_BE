@@ -40,7 +40,6 @@ public class Review {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    // nullable — chỉ có giá trị khi user submit
     @Column(name = "rating")
     private BigDecimal rating;
 

@@ -47,7 +47,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             WHERE r.product.id = :productId
               AND r.status = 'ACTIVE'
             """)
-    Object[] getCountAndAverage(@Param("productId") Long productId);
+    List<Object[]> getCountAndAverage(@Param("productId") Long productId);
 
     @Modifying
     @Query("""

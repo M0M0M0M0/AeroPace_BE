@@ -7,7 +7,10 @@ import com.group1.aeropace.repository.*;
 import com.group1.aeropace.shared.exception.AppException;
 import com.group1.aeropace.shared.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,8 +19,10 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReviewService {
@@ -28,6 +33,8 @@ public class ReviewService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final CustomerProfileRepository customerProfileRepository;
+    private final OrderRepository orderRepository;
+
 
     // ----------------------------------------------------------------
     // Gọi khi order chuyển sang COMPLETED — tạo review PENDING
@@ -52,13 +59,17 @@ public class ReviewService {
     // User submit review từ popup
     // ----------------------------------------------------------------
     @Transactional
-    public ReviewResponse submitReview(Long orderId, Long productId,
-                                       ReviewSubmitRequest request, Long currentUserId) {
+    public ReviewResponse submitReview(String orderCode, Long productId,
+                                       ReviewSubmitRequest request, UserDetails userDetails) {
+        Order order = orderRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
         Review review = reviewRepository
-                .findByOrderIdAndProductIdAndStatus(orderId, productId, ReviewStatus.PENDING)
+                .findByOrderIdAndProductIdAndStatus(order.getId(), productId, ReviewStatus.PENDING)
                 .orElseThrow(() -> new IllegalArgumentException("No pending review found for this order and product"));
 
-        if (!review.getUser().getId().equals(currentUserId)) {
+        if (!review.getUser().getId().equals(userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(()-> new AppException(ErrorCode.USER_NOT_FOUND))
+                .getId())) {
             throw new SecurityException("Unauthorized");
         }
 
@@ -136,11 +147,11 @@ public class ReviewService {
         if (review.getStatus() == ReviewStatus.DELETED) {
             throw new IllegalStateException("Review already deleted");
         }
-
+        boolean wasActive = review.getStatus() == ReviewStatus.ACTIVE;
         review.setStatus(ReviewStatus.DELETED);
         reviewRepository.save(review);
 
-        if (review.getStatus() == ReviewStatus.ACTIVE) {
+        if (wasActive) {
             updateProductRatingSummary(review.getProduct().getId());
         }
     }
@@ -219,15 +230,25 @@ public class ReviewService {
     // ----------------------------------------------------------------
 
     private void updateProductRatingSummary(Long productId) {
-        Object[] result = reviewRepository.getCountAndAverage(productId);
-        long count = result[0] != null ? (Long) result[0] : 0L;
-        BigDecimal avg = result[1] != null
-                ? BigDecimal.valueOf((Double) result[1]).setScale(1, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO;
+        List<Object[]> results = reviewRepository.getCountAndAverage(productId);
+
+        long count = 0L;
+        BigDecimal avg = BigDecimal.ZERO;
+
+        if (results != null && !results.isEmpty()) {
+            Object[] result = results.get(0);
+            count = result[0] != null ? ((Number) result[0]).longValue() : 0L;
+            avg = result[1] != null
+                    ? BigDecimal.valueOf(((Number) result[1]).doubleValue()).setScale(1, RoundingMode.HALF_UP)
+                    : BigDecimal.ZERO;
+        }
+
+        final long finalCount = count;
+        final BigDecimal finalAvg = avg;
 
         productRepository.findById(productId).ifPresent(product -> {
-            product.setReviewCount((int) count);
-            product.setAverageRating(avg);
+            product.setReviewCount((int) finalCount);
+            product.setAverageRating(finalAvg);
             productRepository.save(product);
         });
     }
@@ -259,7 +280,7 @@ public class ReviewService {
         ReviewResponse dto = new ReviewResponse();
         dto.setId(review.getId());
         dto.setUserId(review.getUser().getId());
-        CustomerProfile customerProfile = customerProfileRepository.findById(review.getUser().getId())
+        CustomerProfile customerProfile = customerProfileRepository.findByUser_Id(review.getUser().getId())
                 .orElseThrow(()-> new AppException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));
         dto.setUserName(customerProfile.getFullName());
         dto.setVariantName(buildVariantName(review.getVariant()));

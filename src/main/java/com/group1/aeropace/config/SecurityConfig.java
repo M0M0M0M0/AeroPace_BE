@@ -36,6 +36,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/vi/shipping_methods/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
 
                         // Cart
                         .requestMatchers("/api/v1/cart/**")
@@ -75,6 +76,15 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**")
                         .hasRole("ADMIN")
+                        // Review management
+                        .requestMatchers(HttpMethod.POST,"/api/v1/reviews/**")
+                        .hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT,"/api/v1/reviews/**")
+                        .hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH,"/api/v1/reviews/**")
+                        .hasAnyRole("USER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE,"/api/v1/reviews/**")
+                        .hasAnyRole("USER", "ADMIN")
 
                         // Brand management
                         .requestMatchers(HttpMethod.POST, "/api/v1/brands/**")

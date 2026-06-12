@@ -9,12 +9,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/v1")
 public class ReviewController {
 
     private final ReviewService reviewService;
@@ -51,16 +53,15 @@ public class ReviewController {
     // USER — Submit review từ popup sau khi nhận hàng
     // PUT /reviews/submit?orderId=1&productId=2
     // ----------------------------------------------------------------
-    @PutMapping("/reviews/submit")
-    @PreAuthorize("isAuthenticated()")
+    @PostMapping("/reviews/submit-order")
     public ResponseEntity<ReviewResponse> submitReview(
-            @RequestParam Long orderId,
+            @RequestParam String orderCode,
             @RequestParam Long productId,
             @Valid @RequestBody ReviewSubmitRequest request,
-            @AuthenticationPrincipal Long currentUserId
+            @AuthenticationPrincipal UserDetails userDetails
     ) {
         return ResponseEntity.ok(
-                reviewService.submitReview(orderId, productId, request, currentUserId)
+                reviewService.submitReview(orderCode, productId, request, userDetails)
         );
     }
 
@@ -69,7 +70,6 @@ public class ReviewController {
     // PUT /reviews/{id}
     // ----------------------------------------------------------------
     @PutMapping("/reviews/{id}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ReviewResponse> editReview(
             @PathVariable Long id,
             @Valid @RequestBody ReviewEditRequest request,
@@ -83,7 +83,6 @@ public class ReviewController {
     // DELETE /reviews/{id}
     // ----------------------------------------------------------------
     @DeleteMapping("/reviews/{id}")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteReview(
             @PathVariable Long id,
             @AuthenticationPrincipal Long currentUserId
