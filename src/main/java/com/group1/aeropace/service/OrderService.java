@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -132,7 +133,6 @@ public class OrderService {
         order.setWard(request.getWard());
         order.setDistrict(request.getDistrict());
         order.setProvince(request.getProvince());
-        order.setVat(request.getVat());
         order.setShippingMethod(shippingMethodRepository.findById(request.getShippingMethodId())
                 .orElseThrow( () -> new AppException(ErrorCode.SHIPPING_METHOD_NOT_FOUND))
                 .getName());
@@ -209,6 +209,7 @@ public class OrderService {
         productVariantRepository.saveAll(updatedVariants);
 
         order.setTotalPrice(total);
+        order.setVat(total.multiply(new BigDecimal("0.10")).setScale(0, RoundingMode.HALF_UP));
         order.setUpdatedAt(LocalDateTime.now());
 
         order = orderRepository.save(order);
