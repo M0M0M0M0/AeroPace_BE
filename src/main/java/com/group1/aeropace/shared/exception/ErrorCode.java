@@ -42,6 +42,12 @@ public enum ErrorCode {
     STRIPE_PAYMENT_FAILED("3032","Stripe payment failed",HttpStatus.BAD_REQUEST),
     INVALID_REFUND_STATUS("3033","Order is not eligible for refund",HttpStatus.BAD_REQUEST),
     ACCOUNT_LOCKED("3034","Account is locked",HttpStatus.FORBIDDEN),
+    REVIEW_NOT_FOUND("3035","Review not found",HttpStatus.NOT_FOUND),
+    REVIEW_PENDING_NOT_FOUND("3036","No pending review found for this order and product",HttpStatus.NOT_FOUND),
+    REVIEW_NOT_EDITABLE("3037","Only ACTIVE reviews can be edited",HttpStatus.BAD_REQUEST),
+    REVIEW_EDIT_EXPIRED("3038","Edit period has expired (30 days)",HttpStatus.BAD_REQUEST),
+    REVIEW_ALREADY_DELETED("3039","Review already deleted",HttpStatus.BAD_REQUEST),
+    INVALID_RATING("3040","Rating must be a multiple of 0.5 (1.0 to 5.0)",HttpStatus.BAD_REQUEST),
 
     INTERNAL_ERROR("9999", "Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
     private final String code;

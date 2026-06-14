@@ -62,10 +62,10 @@ public class ReviewService {
     public ReviewResponse submitReview(String orderCode, Long productId,
                                        ReviewSubmitRequest request, UserDetails userDetails) {
         Order order = orderRepository.findByOrderCode(orderCode)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
         Review review = reviewRepository
                 .findByOrderIdAndProductIdAndStatus(order.getId(), productId, ReviewStatus.PENDING)
-                .orElseThrow(() -> new IllegalArgumentException("No pending review found for this order and product"));
+                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_PENDING_NOT_FOUND));
 
         if (!review.getUser().getId().equals(userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(()-> new AppException(ErrorCode.USER_NOT_FOUND))
@@ -92,20 +92,20 @@ public class ReviewService {
     @Transactional
     public ReviewResponse editReview(Long reviewId, ReviewEditRequest request, Long currentUserId) {
         Review original = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
 
         if (!original.getUser().getId().equals(currentUserId)) {
             throw new SecurityException("Unauthorized");
         }
         if (original.getStatus() != ReviewStatus.ACTIVE) {
-            throw new IllegalStateException("Only ACTIVE reviews can be edited");
+            throw new AppException(ErrorCode.REVIEW_NOT_EDITABLE);
         }
 
         // Lấy bản gốc (parentId = null) để tính deadline 30 ngày
         Review root = getRootReview(original);
         long daysSinceCreated = ChronoUnit.DAYS.between(root.getCreatedAt(), LocalDateTime.now());
         if (daysSinceCreated > EDIT_LIMIT_DAYS) {
-            throw new IllegalStateException("Edit period has expired (30 days)");
+            throw new AppException(ErrorCode.REVIEW_EDIT_EXPIRED);
         }
 
         validateRatingStep(request.getRating());
@@ -139,13 +139,13 @@ public class ReviewService {
     @Transactional
     public void deleteReview(Long reviewId, Long currentUserId) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
 
         if (!review.getUser().getId().equals(currentUserId)) {
             throw new SecurityException("Unauthorized");
         }
         if (review.getStatus() == ReviewStatus.DELETED) {
-            throw new IllegalStateException("Review already deleted");
+            throw new AppException(ErrorCode.REVIEW_ALREADY_DELETED);
         }
         boolean wasActive = review.getStatus() == ReviewStatus.ACTIVE;
         review.setStatus(ReviewStatus.DELETED);
@@ -162,7 +162,7 @@ public class ReviewService {
     @Transactional
     public void adminDeleteReview(Long reviewId, AdminDeleteReviewRequest request) {
         Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new IllegalArgumentException("Review not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
 
         boolean wasActive = review.getStatus() == ReviewStatus.ACTIVE;
 
@@ -200,7 +200,7 @@ public class ReviewService {
     @Transactional(readOnly = true)
     public RatingSummaryResponse getRatingSummary(Long productId) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Product not found"));
+                .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
         // Distribution từ DB
         Map<BigDecimal, Long> distribution = new HashMap<>();
@@ -266,7 +266,7 @@ public class ReviewService {
         // Đảm bảo bước nhảy 0.5: 1.0, 1.5, 2.0, ... 5.0
         BigDecimal doubled = rating.multiply(BigDecimal.valueOf(2));
         if (doubled.stripTrailingZeros().scale() > 0) {
-            throw new IllegalArgumentException("Rating must be a multiple of 0.5");
+            throw new AppException(ErrorCode.INVALID_RATING);
         }
     }
 
