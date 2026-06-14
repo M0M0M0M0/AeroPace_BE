@@ -41,6 +41,7 @@ public enum ErrorCode {
     SHIPPING_METHOD_NOT_FOUND("3031","Shipping method not found",HttpStatus.NOT_FOUND),
     STRIPE_PAYMENT_FAILED("3032","Stripe payment failed",HttpStatus.BAD_REQUEST),
     INVALID_REFUND_STATUS("3033","Order is not eligible for refund",HttpStatus.BAD_REQUEST),
+    ACCOUNT_LOCKED("3034","Account is locked",HttpStatus.FORBIDDEN),
 
     INTERNAL_ERROR("9999", "Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
     private final String code;

@@ -40,6 +40,10 @@ public class AuthService {
             throw new AppException(ErrorCode.INVALID_EMAIL_OR_PASSWORD);
         }
 
+        if (!"ACTIVE".equals(user.getStatus())) {
+            throw new AppException(ErrorCode.ACCOUNT_LOCKED);
+        }
+
         String token = jwtUtil.generateToken(
                 user.getEmail(),
                 user.getRole().getName()
