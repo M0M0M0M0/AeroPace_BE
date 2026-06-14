@@ -110,11 +110,12 @@ public class ReviewService {
 
         validateRatingStep(request.getRating());
 
-        // Đánh dấu bản cũ là EDITED
+        // Đánh dấu bản cũ là EDITED — dùng saveAndFlush để ép Hibernate flush UPDATE
+        // trước khi INSERT row mới, tránh vi phạm unique constraint trên generated column
         original.setStatus(ReviewStatus.EDITED);
-        reviewRepository.save(original);
+        reviewRepository.saveAndFlush(original);
 
-        // Insert bản mới
+        // Insert bản mới ACTIVE
         Review newVersion = Review.builder()
                 .user(original.getUser())
                 .product(original.getProduct())
