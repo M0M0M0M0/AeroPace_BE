@@ -70,7 +70,7 @@ public class ReviewService {
         if (!review.getUser().getId().equals(userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(()-> new AppException(ErrorCode.USER_NOT_FOUND))
                 .getId())) {
-            throw new SecurityException("Unauthorized");
+            throw new AppException(ErrorCode.ORDER_ACCESS_DENIED);
         }
 
         validateRatingStep(request.getRating());
@@ -95,7 +95,7 @@ public class ReviewService {
                 .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
 
         if (!original.getUser().getId().equals(currentUserId)) {
-            throw new SecurityException("Unauthorized");
+            throw new AppException(ErrorCode.ORDER_ACCESS_DENIED);
         }
         if (original.getStatus() != ReviewStatus.ACTIVE) {
             throw new AppException(ErrorCode.REVIEW_NOT_EDITABLE);
@@ -142,7 +142,7 @@ public class ReviewService {
                 .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
 
         if (!review.getUser().getId().equals(currentUserId)) {
-            throw new SecurityException("Unauthorized");
+            throw new AppException(ErrorCode.ORDER_ACCESS_DENIED);
         }
         if (review.getStatus() == ReviewStatus.DELETED) {
             throw new AppException(ErrorCode.REVIEW_ALREADY_DELETED);
