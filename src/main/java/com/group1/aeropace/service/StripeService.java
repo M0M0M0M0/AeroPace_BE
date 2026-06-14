@@ -45,11 +45,11 @@ public class StripeService {
     }
 
 
-    public Refund refundStripeCharge(String paymentIntentId) throws StripeException {
+    public Refund refundStripeCharge(String chargeId) throws StripeException {
         Stripe.apiKey = stripeSecretKey;
 
         RefundCreateParams params = RefundCreateParams.builder()
-                .setPaymentIntent(paymentIntentId) // thay vì .setCharge()
+                .setCharge(chargeId)
                 .build();
 
         return Refund.create(params);
