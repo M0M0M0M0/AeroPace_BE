@@ -14,6 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -90,6 +91,18 @@ public class ReviewController {
     ) {
         reviewService.deleteReview(id, currentUser.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    // ----------------------------------------------------------------
+    // USER — Lấy tất cả review ACTIVE của mình cho một đơn hàng
+    // GET /reviews/my-order/{orderCode}
+    // ----------------------------------------------------------------
+    @GetMapping("/reviews/my-order/{orderCode}")
+    public ResponseEntity<List<ReviewResponse>> getMyReviewsByOrder(
+            @PathVariable String orderCode,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        return ResponseEntity.ok(reviewService.getMyReviewsByOrder(orderCode, userDetails));
     }
 
     // ----------------------------------------------------------------

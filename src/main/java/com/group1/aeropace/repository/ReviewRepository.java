@@ -69,4 +69,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             @Param("rating") BigDecimal rating,
             Pageable pageable
     );
+
+    @Query("SELECT r FROM Review r WHERE r.order.id = :orderId AND r.status = 'ACTIVE'")
+    List<Review> findActiveByOrderId(@Param("orderId") Long orderId);
 }

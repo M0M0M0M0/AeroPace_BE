@@ -35,7 +35,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/vi/shipping_methods/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/shipping_methods/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/my-order/**")
+                        .hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
 
                         // Cart

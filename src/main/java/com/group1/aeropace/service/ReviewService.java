@@ -215,6 +215,22 @@ public class ReviewService {
     }
 
     // ----------------------------------------------------------------
+    // User: lấy tất cả review ACTIVE của mình cho một đơn hàng
+    // ----------------------------------------------------------------
+    @Transactional(readOnly = true)
+    public List<ReviewResponse> getMyReviewsByOrder(String orderCode, UserDetails userDetails) {
+        Order order = orderRepository.findByOrderCode(orderCode)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        User user = userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new AppException(ErrorCode.ORDER_ACCESS_DENIED);
+        }
+        return reviewRepository.findActiveByOrderId(order.getId())
+                .stream().map(this::toResponse).collect(java.util.stream.Collectors.toList());
+    }
+
+    // ----------------------------------------------------------------
     // Admin: list tất cả review
     // ----------------------------------------------------------------
     @Transactional(readOnly = true)
@@ -279,6 +295,7 @@ public class ReviewService {
     public ReviewResponse toResponse(Review review) {
         ReviewResponse dto = new ReviewResponse();
         dto.setId(review.getId());
+        dto.setProductId(review.getProduct().getId());
         dto.setUserId(review.getUser().getId());
         CustomerProfile customerProfile = customerProfileRepository.findByUser_Id(review.getUser().getId())
                 .orElseThrow(()-> new AppException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));

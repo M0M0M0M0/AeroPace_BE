@@ -11,6 +11,7 @@ import java.util.List;
 public class ReviewResponse {
 
     private Long id;
+    private Long productId;
     private Long userId;
     private String userName;
     private String variantName;
