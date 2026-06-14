@@ -182,15 +182,17 @@ public class OrderService {
             orderItem.setQuantity(quantity);
             orderItem.setPrice(price);
 
-            // Snapshot tên/variant tại thời điểm đặt hàng — tránh bị ảnh hưởng nếu product thay đổi sau này
             orderItem.setProductName(variant.getProduct().getName());
             orderItem.setSku(variant.getSku() != null ? variant.getSku() : "");
             orderItem.setProductImgUrl(variant.getProduct().getImages()
                     .stream()
-                    .filter(img->img.getPosition()==1)
+                    .filter(img -> img.getPosition() == 1)
                     .map(ProductImage::getImageUrl)
                     .findFirst()
                     .orElse(null));
+            orderItem.setBrandName(variant.getProduct().getBrand() != null
+                    ? variant.getProduct().getBrand().getName() : null);
+            orderItem.setProductId(variant.getProduct().getId());
             orderItem.setNote(null);
 
             if (variant.getStock() >= quantity) {
@@ -452,22 +454,16 @@ public class OrderService {
 
         List<OrderItemResponse> itemResponses = order.getOrderItems().stream().map(item -> {
             OrderItemResponse itemResponse = new OrderItemResponse();
-
-            ProductVariant variant = item.getProductVariant() != null
-                    ? productVariantRepository.findById(item.getProductVariant().getId())
-                      .orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND))
-                    : null;
-
-            itemResponse.setProductId(variant != null ? variant.getProduct().getId() : null);
-            itemResponse.setProductVariantId(variant != null ? variant.getId() : null);
+            itemResponse.setProductId(item.getProductId());
+            itemResponse.setProductVariantId(item.getProductVariant() != null ? item.getProductVariant().getId() : null);
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
             itemResponse.setProductName(item.getProductName());
             itemResponse.setVariantName(item.getVariantName());
             itemResponse.setSku(item.getSku());
             itemResponse.setProductImgUrl(item.getProductImgUrl());
+            itemResponse.setBrandName(item.getBrandName());
             itemResponse.setNote(item.getNote());
-
             return itemResponse;
         }).toList();
 
@@ -500,18 +496,15 @@ public class OrderService {
 
         List<OrderItemResponse> items = orderItems.stream().map(item -> {
             OrderItemResponse itemResponse = new OrderItemResponse();
-            ProductVariant variant = item.getProductVariant() != null
-                    ? productVariantRepository.findById(item.getProductVariant().getId())
-                      .orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND))
-                    : null;
-            itemResponse.setProductId(variant != null ? variant.getProduct().getId() : null);
-            itemResponse.setProductVariantId(variant != null ? variant.getId() : null);
+            itemResponse.setProductId(item.getProductId());
+            itemResponse.setProductVariantId(item.getProductVariant() != null ? item.getProductVariant().getId() : null);
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
             itemResponse.setProductName(item.getProductName());
             itemResponse.setVariantName(item.getVariantName());
             itemResponse.setSku(item.getSku());
             itemResponse.setProductImgUrl(item.getProductImgUrl());
+            itemResponse.setBrandName(item.getBrandName());
             itemResponse.setNote(item.getNote());
             return itemResponse;
         }).toList();
@@ -585,15 +578,15 @@ public class OrderService {
         List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
         List<OrderItemResponse> itemResponses = orderItems.stream().map(item -> {
             OrderItemResponse itemResponse = new OrderItemResponse();
-            itemResponse.setProductVariantId(item.getProductVariant().getId());
+            itemResponse.setProductId(item.getProductId());
+            itemResponse.setProductVariantId(item.getProductVariant() != null ? item.getProductVariant().getId() : null);
             itemResponse.setQuantity(item.getQuantity());
             itemResponse.setPrice(item.getPrice());
             itemResponse.setProductName(item.getProductName());
             itemResponse.setVariantName(item.getVariantName());
             itemResponse.setSku(item.getSku());
-
             itemResponse.setProductImgUrl(item.getProductImgUrl());
-
+            itemResponse.setBrandName(item.getBrandName());
             itemResponse.setNote(item.getNote());
             return itemResponse;
         }).toList();

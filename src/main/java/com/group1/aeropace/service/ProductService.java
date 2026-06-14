@@ -766,143 +766,73 @@ public class ProductService {
     @Transactional
     public ProductResponse fullUpdateProduct(Long productId, ProductFullUpdateRequest request) {
 
-        Product oldProduct = productRepository.findById(productId)
+        Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
         Brand brand = brandRepository.findById(request.getBrandId())
                 .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND));
 
-        //category ids hien tai cua product
-        List<Long> oldCategoryIds = productCategoryRepository.findByProduct_Id(productId)
-                .stream()
-                .map(pc -> pc.getCategory().getId())
-                .toList();
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setBrand(brand);
+        product.setOption1Name(request.getOption1Name());
+        product.setOption2Name(request.getOption2Name());
+        product.setOption3Name(request.getOption3Name());
+        product.setStatus(request.getStatus() != null ? request.getStatus() : product.getStatus());
+        product.setUpdatedAt(LocalDateTime.now());
+        product = productRepository.save(product);
 
-        boolean productHasOrder = orderItemRepository.existsByProductVariant_Product_Id(productId);
-        boolean productInfoChanged = isProductInfoChanged(oldProduct, request, oldCategoryIds);
+        final Long pid = product.getId();
 
-        Product workingProduct;
-
-        if (productHasOrder && productInfoChanged) {
-            //Soft Delete product cũ
-            oldProduct.setStatus(Product.Status.DELETED);
-            productRepository.save(oldProduct);
-
-            //Product mới
-            Product newProduct = new Product();
-            newProduct.setName(request.getName());
-            newProduct.setDescription(request.getDescription());
-            newProduct.setBrand(brand);
-            newProduct.setSlug(generateSlug(request.getName()));
-            newProduct.setOption1Name(request.getOption1Name());
-            newProduct.setOption2Name(request.getOption2Name());
-            newProduct.setOption3Name(request.getOption3Name());
-            newProduct.setStatus(request.getStatus() != null ? request.getStatus() : Product.Status.ACTIVE);
-            newProduct.setCreatedAt(LocalDateTime.now());
-            newProduct.setUpdatedAt(LocalDateTime.now());
-            workingProduct = productRepository.save(newProduct);
-
-        } else {
-            // Update thẳng product cũ
-            oldProduct.setName(request.getName());
-            oldProduct.setDescription(request.getDescription());
-            oldProduct.setBrand(brand);
-            oldProduct.setOption1Name(request.getOption1Name());
-            oldProduct.setOption2Name(request.getOption2Name());
-            oldProduct.setOption3Name(request.getOption3Name());
-            oldProduct.setStatus(request.getStatus() != null ? request.getStatus() : oldProduct.getStatus());
-            oldProduct.setUpdatedAt(LocalDateTime.now());
-            workingProduct = productRepository.save(oldProduct);
-        }
-
-        final Long workingProductId = workingProduct.getId();
-
-        // Xoa variant khong co trong request gui len
+        // Xóa variant không còn trong request
         List<Long> keepVariantIds = request.getVariants().stream()
                 .filter(v -> v.getId() != null)
                 .map(ProductFullUpdateRequest.VariantItem::getId)
                 .toList();
 
-        List<ProductVariant> oldVariants = productVariantRepository
-                .findByProduct_IdAndIsDeletedFalse(productId);
-
-        for (ProductVariant oldVariant : oldVariants) {
-            if (!keepVariantIds.contains(oldVariant.getId())) {
-                deleteVariant(oldVariant.getId());
+        for (ProductVariant old : productVariantRepository.findByProduct_IdAndIsDeletedFalse(productId)) {
+            if (!keepVariantIds.contains(old.getId())) {
+                deleteVariant(old.getId());
             }
         }
 
-        //Xu ly variant
+        // Xử lý variant: có ID → update thẳng, không có ID → tạo mới
         for (ProductFullUpdateRequest.VariantItem variantItem : request.getVariants()) {
-
             if (variantItem.getId() != null) {
-                //check order
-                boolean variantHasOrder = orderItemRepository.existsByProductVariantId(variantItem.getId());
-
-                if (variantHasOrder) {
-                    // Soft delete
-                    ProductVariant oldVariant = productVariantRepository.findById(variantItem.getId()).orElse(null);
-                    if (oldVariant != null) {
-                        oldVariant.setIsDeleted(true);
-                        productVariantRepository.save(oldVariant);
-                        productVariantRepository.flush();
-                    }
-                    createVariantForProduct(workingProduct, variantItem);
-
-                } else {
-                    if (productHasOrder && productInfoChanged) {
-                        // Product bi archive thi soft delete variant cu va tao moi variant sang product moi
-                        ProductVariant existing = productVariantRepository.findById(variantItem.getId()).orElse(null);
-                        if (existing != null) {
-                            existing.setIsDeleted(true);
-                            productVariantRepository.save(existing);
-                            productVariantRepository.flush();
-                        }
-                        createVariantForProduct(workingProduct, variantItem);
-                    } else {
-                        // Chưa có order → update thẳng
-                        ProductVariant existing = productVariantRepository.findById(variantItem.getId()).orElse(null);
-                        if (existing != null) {
-                            existing.setOption1Value(variantItem.getOption1Value());
-                            existing.setOption2Value(variantItem.getOption2Value());
-                            existing.setOption3Value(variantItem.getOption3Value());
-                            existing.setPrice(variantItem.getPrice());
-                            existing.setStock(variantItem.getStock());
-                            existing.setSku(variantItem.getSku());
-                            existing.setUpdatedAt(LocalDateTime.now());
-                            productVariantRepository.save(existing);
-                        }
-                    }
-                }
-
+                productVariantRepository.findById(variantItem.getId()).ifPresent(existing -> {
+                    existing.setOption1Value(variantItem.getOption1Value());
+                    existing.setOption2Value(variantItem.getOption2Value());
+                    existing.setOption3Value(variantItem.getOption3Value());
+                    existing.setPrice(variantItem.getPrice());
+                    existing.setStock(variantItem.getStock());
+                    existing.setSku(variantItem.getSku());
+                    existing.setUpdatedAt(LocalDateTime.now());
+                    productVariantRepository.save(existing);
+                });
             } else {
-                // Variant mới tạo mới gắn vào workingProduct
                 if (variantItem.getOption1Value() != null && variantItem.getPrice() != null) {
-                    createVariantForProduct(workingProduct, variantItem);
+                    createVariantForProduct(product, variantItem);
                 }
             }
         }
 
-        //Image
+        // Image: xóa ảnh không còn trong request, thêm ảnh mới
         if (request.getImages() != null) {
             List<Long> newImageIds = request.getImages().stream()
                     .filter(img -> img.getId() != null)
                     .map(ProductFullUpdateRequest.ImageItem::getId)
                     .toList();
 
-            //Xoa image cu
-            List<ProductImage> oldImages = productImageRepository.findByProduct_Id(workingProductId);
-            for (ProductImage oldImg : oldImages) {
+            for (ProductImage oldImg : productImageRepository.findByProduct_Id(pid)) {
                 if (!newImageIds.contains(oldImg.getId())) {
                     productImageRepository.delete(oldImg);
                 }
             }
 
-            //Them image moi
             for (ProductFullUpdateRequest.ImageItem imgItem : request.getImages()) {
                 if (imgItem.getId() == null && imgItem.getImageUrl() != null && !imgItem.getImageUrl().isBlank()) {
                     ProductImage newImage = new ProductImage();
-                    newImage.setProduct(workingProduct);
+                    newImage.setProduct(product);
                     newImage.setImageUrl(imgItem.getImageUrl());
                     newImage.setPosition(imgItem.getPosition() != null ? imgItem.getPosition() : 1);
                     newImage.setCreatedAt(LocalDateTime.now());
@@ -910,41 +840,23 @@ public class ProductService {
                     productImageRepository.save(newImage);
                 }
             }
-
-            // Neu product bi archive, copy toan bo image sang product moi
-            if (productHasOrder && productInfoChanged) {
-                for (ProductFullUpdateRequest.ImageItem imgItem : request.getImages()) {
-                    if (imgItem.getImageUrl() != null && !imgItem.getImageUrl().isBlank()) {
-                        ProductImage newImage = new ProductImage();
-                        newImage.setProduct(workingProduct);
-                        newImage.setImageUrl(imgItem.getImageUrl());
-                        newImage.setPosition(imgItem.getPosition() != null ? imgItem.getPosition() : 1);
-                        newImage.setCreatedAt(LocalDateTime.now());
-                        newImage.setUpdatedAt(LocalDateTime.now());
-                        productImageRepository.save(newImage);
-                    }
-                }
-            }
         }
 
-        //Categories
+        // Categories: xóa hết rồi gán lại (batch load tránh N+1)
         if (request.getCategoryIds() != null) {
-            //Xoa all cate cu de gan lai
-            productCategoryRepository.deleteByProduct_Id(workingProductId);
-
-            for (Long catId : request.getCategoryIds()) {
-                categoryRepository.findById(catId).ifPresent(category -> {
-                    ProductCategoryId pcId = new ProductCategoryId(workingProductId, catId);
-                    ProductCategory pc = new ProductCategory();
-                    pc.setId(pcId);
-                    pc.setProduct(workingProduct);
-                    pc.setCategory(category);
-                    productCategoryRepository.save(pc);
-                });
-            }
+            productCategoryRepository.deleteByProduct_Id(pid);
+            final Product savedProduct = product;
+            categoryRepository.findAllById(request.getCategoryIds()).forEach(category -> {
+                ProductCategoryId pcId = new ProductCategoryId(pid, category.getId());
+                ProductCategory pc = new ProductCategory();
+                pc.setId(pcId);
+                pc.setProduct(savedProduct);
+                pc.setCategory(category);
+                productCategoryRepository.save(pc);
+            });
         }
 
-        return getProductsByIds(List.of(workingProductId)).get(0);
+        return getProductsByIds(List.of(pid)).get(0);
     }
 
     //Helper
@@ -963,45 +875,4 @@ public class ProductService {
         productVariantRepository.save(variant);
     }
 
-    private boolean isProductInfoChanged(Product product, ProductFullUpdateRequest request,
-                                         List<Long> oldCategoryIds) {
-        // Check name, description, brand, options
-        if (!Objects.equals(product.getName(), request.getName())
-                || !Objects.equals(product.getDescription(), request.getDescription())
-                || !Objects.equals(product.getBrand().getId(), request.getBrandId())
-                || !Objects.equals(product.getOption1Name(), request.getOption1Name())
-                || !Objects.equals(product.getOption2Name(), request.getOption2Name())
-                || !Objects.equals(product.getOption3Name(), request.getOption3Name())) {
-            return true;
-        }
-
-        // Check images
-        List<String> oldImageUrls = product.getImages() == null ? List.of()
-                : product.getImages().stream()
-                  .sorted(Comparator.comparing(ProductImage::getPosition,
-                          Comparator.nullsLast(Integer::compareTo)))
-                  .map(ProductImage::getImageUrl)
-                  .toList();
-
-        List<String> newImageUrls = request.getImages() == null ? List.of()
-                : request.getImages().stream()
-                  .sorted(Comparator.comparing(img -> img.getPosition() != null ? img.getPosition() : 0))
-                  .map(ProductFullUpdateRequest.ImageItem::getImageUrl)
-                  .toList();
-
-        if (!Objects.equals(oldImageUrls, newImageUrls)) {
-            return true;
-        }
-
-        // Check categories
-        List<Long> sortedOld = oldCategoryIds.stream().sorted().toList();
-        List<Long> sortedNew = request.getCategoryIds() == null ? List.of()
-                : request.getCategoryIds().stream().sorted().toList();
-
-        if (!Objects.equals(sortedOld, sortedNew)) {
-            return true;
-        }
-
-        return false;
-    }
 }

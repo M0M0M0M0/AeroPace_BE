@@ -44,6 +44,12 @@ public class OrderItem {
     @Column(name = "product_img_url", length = 500)
     private String productImgUrl;
 
+    @Column(name = "brand_name", length = 200)
+    private String brandName;
+
+    @Column(name = "product_id")
+    private Long productId;
+
     @Column(name = "note", length = 500)
     private String note;
 }
