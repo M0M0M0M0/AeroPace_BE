@@ -1,5 +1,6 @@
 package com.group1.aeropace.controller;
 
+import com.group1.aeropace.config.CustomUserDetails;
 import com.group1.aeropace.dto.review.*;
 import com.group1.aeropace.enums.ReviewStatus;
 import com.group1.aeropace.service.ReviewService;
@@ -73,9 +74,9 @@ public class ReviewController {
     public ResponseEntity<ReviewResponse> editReview(
             @PathVariable Long id,
             @Valid @RequestBody ReviewEditRequest request,
-            @AuthenticationPrincipal Long currentUserId
+            @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        return ResponseEntity.ok(reviewService.editReview(id, request, currentUserId));
+        return ResponseEntity.ok(reviewService.editReview(id, request, currentUser.getId()));
     }
 
     // ----------------------------------------------------------------
@@ -85,9 +86,9 @@ public class ReviewController {
     @DeleteMapping("/reviews/{id}")
     public ResponseEntity<Void> deleteReview(
             @PathVariable Long id,
-            @AuthenticationPrincipal Long currentUserId
+            @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        reviewService.deleteReview(id, currentUserId);
+        reviewService.deleteReview(id, currentUser.getId());
         return ResponseEntity.noContent().build();
     }
 
