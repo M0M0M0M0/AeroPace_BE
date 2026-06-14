@@ -70,7 +70,8 @@ public class OrderController {
     // PUT /api/v1/orders/{orderId}/cancel
     // =========================================================
     @PutMapping("/{orderCode}/cancel")
-    public void cancelOrder(@PathVariable String orderCode, Authentication authentication, String cancelNote) {
+    public void cancelOrder(@PathVariable String orderCode, Authentication authentication,
+                            @RequestParam(required = false) String cancelNote) {
         orderService.cancelOrder(orderCode, authentication, cancelNote);
     }
     // =========================================================
