@@ -6,6 +6,7 @@ import com.group1.aeropace.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,17 +17,8 @@ import org.springframework.stereotype.Service;
 
     @Override
     public UserDetails loadUserByUsername(String username) {
-
-//        System.out.println("LOAD USER BY USERNAME: " + username);
-
         User user = userRepository.findByEmail(username)
-                .orElseThrow(() -> {
-                    System.out.println(" USER NOT FOUND IN DB");
-                    return new RuntimeException("User not found");
-                });
-
-//        System.out.println("FOUND USER: " + user.getEmail());
-
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
         return new CustomUserDetails(user);
     }
     }
