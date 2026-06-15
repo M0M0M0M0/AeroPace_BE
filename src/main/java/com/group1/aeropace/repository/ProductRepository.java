@@ -166,12 +166,12 @@ AND (:sku IS NULL OR EXISTS (
     WHERE pv.product = p AND LOWER(pv.sku) LIKE LOWER(CONCAT('%', :sku, '%'))
 ))
 AND (:stockMin IS NULL OR (
-    SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
-    WHERE pv2.product = p AND pv2.isDeleted = false
+    SELECT COALESCE(SUM(ii2.cachedStock), 0) FROM InventoryItem ii2
+    WHERE ii2.productVariant.product = p AND ii2.productVariant.isDeleted = false
 ) >= :stockMin)
 AND (:stockMax IS NULL OR (
-    SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
-    WHERE pv2.product = p AND pv2.isDeleted = false
+    SELECT COALESCE(SUM(ii2.cachedStock), 0) FROM InventoryItem ii2
+    WHERE ii2.productVariant.product = p AND ii2.productVariant.isDeleted = false
 ) <= :stockMax)
 AND (:ratingMin IS NULL OR p.averageRating >= :ratingMin)
 AND (:ratingMax IS NULL OR p.averageRating <= :ratingMax)
@@ -207,12 +207,12 @@ AND (:sku IS NULL OR EXISTS (
     WHERE pv.product = p AND LOWER(pv.sku) LIKE LOWER(CONCAT('%', :sku, '%'))
 ))
 AND (:stockMin IS NULL OR (
-    SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
-    WHERE pv2.product = p AND pv2.isDeleted = false
+    SELECT COALESCE(SUM(ii2.cachedStock), 0) FROM InventoryItem ii2
+    WHERE ii2.productVariant.product = p AND ii2.productVariant.isDeleted = false
 ) >= :stockMin)
 AND (:stockMax IS NULL OR (
-    SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
-    WHERE pv2.product = p AND pv2.isDeleted = false
+    SELECT COALESCE(SUM(ii2.cachedStock), 0) FROM InventoryItem ii2
+    WHERE ii2.productVariant.product = p AND ii2.productVariant.isDeleted = false
 ) <= :stockMax)
 AND (:ratingMin IS NULL OR p.averageRating >= :ratingMin)
 AND (:ratingMax IS NULL OR p.averageRating <= :ratingMax)
@@ -263,12 +263,12 @@ AND (:sku IS NULL OR EXISTS (
     SELECT 1 FROM ProductVariant pv WHERE pv.product = p AND LOWER(pv.sku) LIKE LOWER(CONCAT('%', :sku, '%'))
 ))
 AND (:stockMin IS NULL OR (
-    SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
-    WHERE pv2.product = p AND pv2.isDeleted = false
+    SELECT COALESCE(SUM(ii2.cachedStock), 0) FROM InventoryItem ii2
+    WHERE ii2.productVariant.product = p AND ii2.productVariant.isDeleted = false
 ) >= :stockMin)
 AND (:stockMax IS NULL OR (
-    SELECT COALESCE(SUM(pv2.stock), 0) FROM ProductVariant pv2
-    WHERE pv2.product = p AND pv2.isDeleted = false
+    SELECT COALESCE(SUM(ii2.cachedStock), 0) FROM InventoryItem ii2
+    WHERE ii2.productVariant.product = p AND ii2.productVariant.isDeleted = false
 ) <= :stockMax)
 AND (:ratingMin IS NULL OR p.averageRating >= :ratingMin)
 AND (:ratingMax IS NULL OR p.averageRating <= :ratingMax)

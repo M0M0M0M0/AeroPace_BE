@@ -15,8 +15,13 @@ import java.util.List;
 public class OrderListResponse {
     private String orderCode;
     private BigDecimal totalPrice;
+    private BigDecimal shippingFee;
+    private BigDecimal vat;
     private OrderStatus status;
     private String shippingAddress;
+    private String ward;
+    private String district;
+    private String province;
     private String phoneNumber;
     private String receiverName;
     private LocalDateTime createdAt;

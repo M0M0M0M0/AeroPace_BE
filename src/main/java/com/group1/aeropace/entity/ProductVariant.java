@@ -46,9 +46,6 @@ public class ProductVariant {
     @Column(name = "compare_price")
     private BigDecimal comparePrice;
 
-    @Column(nullable = false)
-    private Integer stock;
-
     @Column(length = 100)
     private String sku;
 

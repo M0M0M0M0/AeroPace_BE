@@ -30,6 +30,9 @@ public class CartService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private InventoryService inventoryService;
+
     /**
      * Lấy toàn bộ giỏ hàng của user, bao gồm tổng số lượng và tổng tiền tính theo giá hiện tại.
      *
@@ -74,7 +77,8 @@ public class CartService {
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
-        if (variant.getStock() <= 0) {
+        int stock = inventoryService.getAvailableStockByVariantId(variant.getId());
+        if (stock <= 0) {
             throw new AppException(ErrorCode.OUT_OF_STOCK);
         }
 
@@ -85,7 +89,7 @@ public class CartService {
         int currentQty = (cartItem == null) ? 0 : cartItem.getQuantity();
         int newQty = currentQty + request.getQuantity();
 
-        if (newQty > variant.getStock()) {
+        if (newQty > stock) {
             throw new AppException(ErrorCode.EXCEED_STOCK);
         }
 
@@ -119,7 +123,7 @@ public class CartService {
                 .orElseThrow(() -> new AppException(ErrorCode.CART_ITEM_NOT_FOUND));
 
         ProductVariant variant = cartItem.getProductVariant();
-        if (request.getQuantity() > variant.getStock()) {
+        if (request.getQuantity() > inventoryService.getAvailableStockByVariantId(variant.getId())) {
             throw new AppException(ErrorCode.EXCEED_STOCK);
         }
 
@@ -191,19 +195,20 @@ public class CartService {
 
             if (variant == null) continue;
 
+            int stock = inventoryService.getAvailableStockByVariantId(variant.getId());
             CartItem existing = cartItemRepository
                     .findByUserIdAndProductVariantId(userId, variant.getId())
                     .orElse(null);
 
             if (existing != null) {
-                existing.setQuantity(Math.min(item.getQuantity(), variant.getStock()));
+                existing.setQuantity(Math.min(item.getQuantity(), stock));
                 existing.setUpdatedAt(LocalDateTime.now());
                 cartItemRepository.save(existing);
             } else {
                 CartItem newItem = new CartItem();
                 newItem.setUser(user);
                 newItem.setProductVariant(variant);
-                newItem.setQuantity(Math.min(item.getQuantity(), variant.getStock()));
+                newItem.setQuantity(Math.min(item.getQuantity(), stock));
                 newItem.setCreatedAt(LocalDateTime.now());
                 newItem.setUpdatedAt(LocalDateTime.now());
                 cartItemRepository.save(newItem);
@@ -257,6 +262,7 @@ public class CartService {
                 .map(img -> img.getImageUrl())
                 .orElse(null);
         boolean isAvailable = !variant.getIsDeleted() && variant.getProduct().getStatus() == Product.Status.ACTIVE;
+        int stock = inventoryService.getAvailableStockByVariantId(variant.getId());
 
         return new CartItemResponse(
                 cartItem.getId(),
@@ -268,10 +274,10 @@ public class CartService {
                 variant.getOption3Value(),
                 variant.getPrice(),
                 cartItem.getQuantity(),
-                variant.getStock(),
+                stock,
                 lineTotal,
                 imageUrl,
-                variant.getStock(),
+                stock,
                 isAvailable
         );
     }

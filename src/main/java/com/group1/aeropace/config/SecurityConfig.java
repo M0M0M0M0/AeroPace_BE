@@ -32,6 +32,9 @@ public class SecurityConfig {
                         // Public
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/historical/**")
+                        .hasAnyRole("USER", "ADMIN")
+
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/brands/**").permitAll()

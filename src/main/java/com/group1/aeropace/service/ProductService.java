@@ -49,6 +49,10 @@ public class ProductService {
     private ProductImageRepository productImageRepository;
     @Autowired
     private CategoryRepository categoryRepository;
+    @Autowired
+    private InventoryService inventoryService;
+    @Autowired
+    private HistoricalProductService historicalProductService;
 
 
     /**
@@ -141,6 +145,12 @@ public class ProductService {
             });
         }
 
+        if (savedProduct.getStatus() == Product.Status.ACTIVE) {
+            List<ProductImage> images = productImageRepository.findByProduct_Id(savedProduct.getId());
+            List<ProductVariant> variants = productVariantRepository.findByProduct_IdAndIsDeletedFalse(savedProduct.getId());
+            historicalProductService.createSnapshot(savedProduct, images, variants);
+        }
+
         return getProductsByIds(List.of(savedProduct.getId())).get(0);
     }
 
@@ -182,10 +192,10 @@ public class ProductService {
         variant.setOption2Value(request.getOption2Value());
         variant.setOption3Value(request.getOption3Value());
         variant.setPrice(request.getPrice());
-        variant.setStock(request.getStock());
         variant.setSku(request.getSku());
 
         ProductVariant savedVariant = productVariantRepository.save(variant);
+        inventoryService.createInventoryItem(savedVariant, request.getStock() != null ? request.getStock() : 0);
 
         return mapToProductVariantResponse(savedVariant);
     }
@@ -203,6 +213,13 @@ public class ProductService {
         Brand brand = brandRepository.findById(request.getBrandId())
                 .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND));
 
+        boolean majorChange = !Objects.equals(product.getName(), request.getName())
+                || !Objects.equals(product.getDescription(), request.getDescription())
+                || !Objects.equals(product.getBrand().getId(), brand.getId())
+                || !Objects.equals(product.getOption1Name(), request.getOption1Name())
+                || !Objects.equals(product.getOption2Name(), request.getOption2Name())
+                || !Objects.equals(product.getOption3Name(), request.getOption3Name());
+
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setBrand(brand);
@@ -212,6 +229,12 @@ public class ProductService {
         product.setStatus(request.getStatus() != null ? request.getStatus() : Product.Status.ACTIVE);
 
         Product updatedProduct = productRepository.save(product);
+
+        if (majorChange) {
+            List<ProductImage> images = productImageRepository.findByProduct_Id(id);
+            List<ProductVariant> variants = productVariantRepository.findByProduct_IdAndIsDeletedFalse(id);
+            historicalProductService.createSnapshot(updatedProduct, images, variants);
+        }
 
         return mapToProductDetailResponse(updatedProduct);
     }
@@ -225,15 +248,35 @@ public class ProductService {
         ProductVariant variant = productVariantRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND));
 
+        boolean optionChanged = !Objects.equals(variant.getOption1Value(), request.getOption1Value())
+                || !Objects.equals(variant.getOption2Value(), request.getOption2Value())
+                || !Objects.equals(variant.getOption3Value(), request.getOption3Value());
+
         variant.setOption1Value(request.getOption1Value());
         variant.setOption2Value(request.getOption2Value());
         variant.setOption3Value(request.getOption3Value());
         variant.setPrice(request.getPrice());
-        variant.setStock(request.getStock());
         variant.setSku(request.getSku());
         variant.setUpdatedAt(LocalDateTime.now());
 
         ProductVariant updatedVariant = productVariantRepository.save(variant);
+
+        if (request.getStock() != null) {
+            int current = inventoryService.getAvailableStockByVariantId(id);
+            int delta = request.getStock() - current;
+            if (delta != 0) {
+                inventoryService.adjust(id, delta, "Manual update");
+            }
+        }
+
+        if (optionChanged) {
+            Long productId = updatedVariant.getProduct().getId();
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+            List<ProductImage> images = productImageRepository.findByProduct_Id(productId);
+            List<ProductVariant> variants = productVariantRepository.findByProduct_IdAndIsDeletedFalse(productId);
+            historicalProductService.createSnapshot(product, images, variants);
+        }
 
         return mapToProductVariantResponse(updatedVariant);
     }
@@ -267,9 +310,16 @@ public class ProductService {
 
         boolean hasOrder = orderItemRepository.existsByProductVariantId(id);
         if (hasOrder) {
+            Long productId = variant.getProduct().getId();
             variant.setIsDeleted(true);
             variant.setUpdatedAt(LocalDateTime.now());
             productVariantRepository.save(variant);
+
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+            List<ProductImage> images = productImageRepository.findByProduct_Id(productId);
+            List<ProductVariant> remaining = productVariantRepository.findByProduct_IdAndIsDeletedFalse(productId);
+            historicalProductService.createSnapshot(product, images, remaining);
         } else {
             productVariantRepository.delete(variant);
         }
@@ -317,7 +367,7 @@ public class ProductService {
                 variant.getOption2Value(),
                 variant.getOption3Value(),
                 variant.getPrice(),
-                variant.getStock()
+                inventoryService.getAvailableStockByVariantId(variant.getId())
         );
     }
 
@@ -488,6 +538,12 @@ public class ProductService {
         product.setStatus(status);
         product.setUpdatedAt(LocalDateTime.now());
         productRepository.save(product);
+
+        if (status == Product.Status.ACTIVE && !historicalProductService.hasAnySnapshot(id)) {
+            List<ProductImage> images = productImageRepository.findByProduct_Id(id);
+            List<ProductVariant> variants = productVariantRepository.findByProduct_IdAndIsDeletedFalse(id);
+            historicalProductService.createSnapshot(product, images, variants);
+        }
     }
 
     /**
@@ -720,6 +776,13 @@ public class ProductService {
         Brand brand = brandRepository.findById(request.getBrandId())
                 .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND));
 
+        boolean majorChange = !Objects.equals(product.getName(), request.getName())
+                || !Objects.equals(product.getDescription(), request.getDescription())
+                || !Objects.equals(product.getBrand().getId(), brand.getId())
+                || !Objects.equals(product.getOption1Name(), request.getOption1Name())
+                || !Objects.equals(product.getOption2Name(), request.getOption2Name())
+                || !Objects.equals(product.getOption3Name(), request.getOption3Name());
+
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setBrand(brand);
@@ -732,7 +795,7 @@ public class ProductService {
 
         final Long pid = product.getId();
 
-        // Xóa variant không còn trong request
+        // Xóa variant không còn trong request (inline để tránh double-snapshot)
         List<Long> keepVariantIds = request.getVariants().stream()
                 .filter(v -> v.getId() != null)
                 .map(ProductFullUpdateRequest.VariantItem::getId)
@@ -740,22 +803,43 @@ public class ProductService {
 
         for (ProductVariant old : productVariantRepository.findByProduct_IdAndIsDeletedFalse(productId)) {
             if (!keepVariantIds.contains(old.getId())) {
-                deleteVariant(old.getId());
+                boolean hasOrder = orderItemRepository.existsByProductVariantId(old.getId());
+                if (hasOrder) {
+                    old.setIsDeleted(true);
+                    old.setUpdatedAt(LocalDateTime.now());
+                    productVariantRepository.save(old);
+                    majorChange = true;
+                } else {
+                    productVariantRepository.delete(old);
+                }
             }
         }
 
         // Xử lý variant: có ID → update thẳng, không có ID → tạo mới
+        boolean[] variantOptionChanged = {false};
         for (ProductFullUpdateRequest.VariantItem variantItem : request.getVariants()) {
             if (variantItem.getId() != null) {
                 productVariantRepository.findById(variantItem.getId()).ifPresent(existing -> {
+                    if (!Objects.equals(existing.getOption1Value(), variantItem.getOption1Value())
+                            || !Objects.equals(existing.getOption2Value(), variantItem.getOption2Value())
+                            || !Objects.equals(existing.getOption3Value(), variantItem.getOption3Value())) {
+                        variantOptionChanged[0] = true;
+                    }
                     existing.setOption1Value(variantItem.getOption1Value());
                     existing.setOption2Value(variantItem.getOption2Value());
                     existing.setOption3Value(variantItem.getOption3Value());
                     existing.setPrice(variantItem.getPrice());
-                    existing.setStock(variantItem.getStock());
                     existing.setSku(variantItem.getSku());
                     existing.setUpdatedAt(LocalDateTime.now());
-                    productVariantRepository.save(existing);
+                    ProductVariant saved = productVariantRepository.save(existing);
+
+                    if (variantItem.getStock() != null) {
+                        int current = inventoryService.getAvailableStockByVariantId(saved.getId());
+                        int delta = variantItem.getStock() - current;
+                        if (delta != 0) {
+                            inventoryService.adjust(saved.getId(), delta, "Product update");
+                        }
+                    }
                 });
             } else {
                 if (variantItem.getOption1Value() != null && variantItem.getPrice() != null) {
@@ -763,6 +847,7 @@ public class ProductService {
                 }
             }
         }
+        if (variantOptionChanged[0]) majorChange = true;
 
         // Image: xóa ảnh không còn trong request, thêm ảnh mới
         if (request.getImages() != null) {
@@ -774,6 +859,7 @@ public class ProductService {
             for (ProductImage oldImg : productImageRepository.findByProduct_Id(pid)) {
                 if (!newImageIds.contains(oldImg.getId())) {
                     productImageRepository.delete(oldImg);
+                    majorChange = true;
                 }
             }
 
@@ -804,6 +890,14 @@ public class ProductService {
             });
         }
 
+        if (majorChange) {
+            Product finalProduct = productRepository.findById(pid)
+                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+            List<ProductImage> images = productImageRepository.findByProduct_Id(pid);
+            List<ProductVariant> variants = productVariantRepository.findByProduct_IdAndIsDeletedFalse(pid);
+            historicalProductService.createSnapshot(finalProduct, images, variants);
+        }
+
         return getProductsByIds(List.of(pid)).get(0);
     }
 
@@ -815,12 +909,12 @@ public class ProductService {
         variant.setOption2Value(item.getOption2Value() != null ? item.getOption2Value() : "");
         variant.setOption3Value(item.getOption3Value() != null ? item.getOption3Value() : "");
         variant.setPrice(item.getPrice());
-        variant.setStock(item.getStock() != null ? item.getStock() : 0);
         variant.setSku(item.getSku() != null ? item.getSku() : "");
         variant.setIsDeleted(false);
         variant.setCreatedAt(LocalDateTime.now());
         variant.setUpdatedAt(LocalDateTime.now());
-        productVariantRepository.save(variant);
+        ProductVariant savedVariant = productVariantRepository.save(variant);
+        inventoryService.createInventoryItem(savedVariant, item.getStock() != null ? item.getStock() : 0);
     }
 
 }

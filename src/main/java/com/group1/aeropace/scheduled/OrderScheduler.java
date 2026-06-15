@@ -2,14 +2,13 @@ package com.group1.aeropace.scheduled;
 
 import com.group1.aeropace.entity.Order;
 import com.group1.aeropace.entity.OrderItem;
-import com.group1.aeropace.entity.ProductVariant;
 import com.group1.aeropace.enums.CancelType;
 import com.group1.aeropace.enums.OrderStatus;
 import com.group1.aeropace.enums.PaymentMethod;
 import com.group1.aeropace.enums.PaymentStatus;
 import com.group1.aeropace.repository.OrderItemRepository;
 import com.group1.aeropace.repository.OrderRepository;
-import com.group1.aeropace.repository.ProductVariantRepository;
+import com.group1.aeropace.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -26,7 +25,7 @@ public class OrderScheduler {
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
-    private final ProductVariantRepository productVariantRepository;
+    private final InventoryService inventoryService;
 
     @Scheduled(fixedRate = 60000)
     @Transactional
@@ -49,9 +48,7 @@ public class OrderScheduler {
 
             List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
             for (OrderItem item : items) {
-                ProductVariant variant = item.getProductVariant();
-                variant.setStock(variant.getStock() + item.getQuantity());
-                productVariantRepository.save(variant);
+                inventoryService.restoreStock(item.getProductVariant().getId(), item.getQuantity(), order.getId());
             }
 
             log.info("Auto cancelled expired PayPal order: {}, restored stock for {} items",

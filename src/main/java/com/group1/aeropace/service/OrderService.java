@@ -64,6 +64,9 @@ public class OrderService {
     private ApplicationEventPublisher eventPublisher;
 
     @Autowired
+    private InventoryService inventoryService;
+
+    @Autowired
     private ReviewService reviewService;
 
     /**
@@ -193,20 +196,12 @@ public class OrderService {
             orderItem.setProductId(variant.getProduct().getId());
             orderItem.setNote(null);
 
-            if (variant.getStock() >= quantity) {
-                variant.setStock(variant.getStock() - quantity);
-            } else {
-                throw new AppException(ErrorCode.EXCEED_STOCK);
-            }
+            inventoryService.deductStock(variant.getId(), quantity, order.getId());
 
             orderItems.add(orderItem);
         }
 
         orderItemRepository.saveAll(orderItems);
-        List<ProductVariant> updatedVariants = orderItems.stream()
-                .map(OrderItem::getProductVariant)
-                .toList();
-        productVariantRepository.saveAll(updatedVariants);
 
         order.setTotalPrice(total);
         order.setVat(total.multiply(new BigDecimal("0.10")).setScale(0, RoundingMode.HALF_UP));
@@ -347,9 +342,7 @@ public class OrderService {
             order.setCancelReason(reason);
             List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
             for (OrderItem item : items) {
-                ProductVariant variant = item.getProductVariant();
-                variant.setStock(variant.getStock() + item.getQuantity());
-                productVariantRepository.save(variant);
+                inventoryService.restoreStock(item.getProductVariant().getId(), item.getQuantity(), order.getId());
             }
         }
 
@@ -424,9 +417,7 @@ public class OrderService {
         // Hoàn stock
         List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
         for (OrderItem item : items) {
-            ProductVariant variant = item.getProductVariant();
-            variant.setStock(variant.getStock() + item.getQuantity());
-            productVariantRepository.save(variant);
+            inventoryService.restoreStock(item.getProductVariant().getId(), item.getQuantity(), order.getId());
         }
 
         order.setUpdatedAt(LocalDateTime.now());
@@ -441,8 +432,13 @@ public class OrderService {
         OrderListResponse response = new OrderListResponse();
         response.setOrderCode(order.getOrderCode());
         response.setTotalPrice(order.getTotalPrice());
+        response.setShippingFee(order.getShippingFee());
+        response.setVat(order.getVat());
         response.setStatus(order.getStatus());
         response.setShippingAddress(order.getShippingAddress());
+        response.setWard(order.getWard());
+        response.setDistrict(order.getDistrict());
+        response.setProvince(order.getProvince());
         response.setPhoneNumber(order.getPhoneNumber());
         response.setReceiverName(order.getReceiverName());
         response.setCreatedAt(order.getCreatedAt());

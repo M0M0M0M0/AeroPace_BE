@@ -25,18 +25,19 @@ public class AdminDashboardService {
     private final ProductVariantRepository productVariantRepository;
     private final UserRepository userRepository;
     private final CustomerProfileRepository customerProfileRepository;
+    private final InventoryService inventoryService;
 
     // ── Low Stock ─────────────────────────────────────────────
     public List<LowStockResponse> getLowStock(int threshold, int limit) {
         return productVariantRepository
-                .findByStockLessThanEqualAndIsDeletedFalseOrderByStockAsc(threshold)
+                .findLowStockVariants(threshold)
                 .stream()
                 .limit(limit)
                 .map(v -> LowStockResponse.builder()
                         .variantId(v.getId())
                         .productName(v.getProduct().getName())
                         .sku(v.getSku())
-                        .stock(v.getStock())
+                        .stock(inventoryService.getAvailableStockByVariantId(v.getId()))
                         .build())
                 .toList();
     }
