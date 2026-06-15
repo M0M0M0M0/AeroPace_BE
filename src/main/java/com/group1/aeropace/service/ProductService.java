@@ -356,9 +356,9 @@ public class ProductService {
     }
 
     /**
-     * Lấy chi tiết một product cho client. Product có status DELETED bị coi là không tồn tại.
+     * Lấy chi tiết một product cho client. Chỉ trả về product ACTIVE — mọi status khác bị coi là không tồn tại.
      *
-     * @throws AppException PRODUCT_NOT_FOUND nếu không tìm thấy hoặc đã bị xóa
+     * @throws AppException PRODUCT_NOT_FOUND nếu không tìm thấy, đã bị xóa, archived, hoặc còn là draft
      */
     public ProductResponse getProductDetail(Long id) {
         ProductResponse product = getProductsByIds(List.of(id))
@@ -366,7 +366,7 @@ public class ProductService {
                 .findFirst()
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        if (product.getStatus() == Product.Status.DELETED) {
+        if (product.getStatus() != Product.Status.ACTIVE) {
             throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
         }
         return product;
