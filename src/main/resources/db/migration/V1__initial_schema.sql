@@ -1,0 +1,12 @@
+-- ============================================================
+-- V1: Schema gốc của dự án
+-- ============================================================
+-- File này cần được tạo từ lệnh dump schema MySQL:
+--
+--   mysqldump -u root -p --no-data shop_runner > V1__initial_schema.sql
+--
+-- Sau đó xóa dòng hướng dẫn này và giữ lại toàn bộ CREATE TABLE.
+--
+-- Mục đích: Developer mới clone repo có thể chạy app trên DB trắng
+-- mà không cần restore từ backup — Flyway tự chạy V1 rồi V2.
+-- ============================================================
