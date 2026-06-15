@@ -1,8 +1,13 @@
 -- ============================================================
 -- V2: Inventory + Historical Product
 -- ============================================================
+-- On existing DBs: this file is skipped (baseline-version=2).
+-- On fresh DBs: V1 already creates all tables below, so these are no-ops.
+-- The stock column migration is not needed on fresh DBs (V1 has no stock column
+-- and no existing data), and existing DBs were migrated via migration.sql before
+-- Flyway was adopted.
 
-CREATE TABLE historical_products (
+CREATE TABLE IF NOT EXISTS historical_products (
     id              BIGINT AUTO_INCREMENT PRIMARY KEY,
     product_id      BIGINT NOT NULL,
     name            VARCHAR(200),
@@ -16,7 +21,7 @@ CREATE TABLE historical_products (
     INDEX idx_hp_product_valid (product_id, valid_from, valid_to)
 );
 
-CREATE TABLE historical_product_images (
+CREATE TABLE IF NOT EXISTS historical_product_images (
     id                      BIGINT AUTO_INCREMENT PRIMARY KEY,
     historical_product_id   BIGINT NOT NULL,
     image_url               VARCHAR(500) NOT NULL,
@@ -24,7 +29,7 @@ CREATE TABLE historical_product_images (
     INDEX idx_hpi_hp (historical_product_id)
 );
 
-CREATE TABLE historical_product_variants (
+CREATE TABLE IF NOT EXISTS historical_product_variants (
     id                      BIGINT AUTO_INCREMENT PRIMARY KEY,
     historical_product_id   BIGINT NOT NULL,
     original_variant_id     BIGINT NULL,
@@ -37,7 +42,7 @@ CREATE TABLE historical_product_variants (
     INDEX idx_hpv_hp (historical_product_id)
 );
 
-CREATE TABLE inventory_items (
+CREATE TABLE IF NOT EXISTS inventory_items (
     id                  BIGINT AUTO_INCREMENT PRIMARY KEY,
     product_variant_id  BIGINT NOT NULL UNIQUE,
     sku                 VARCHAR(100),
@@ -45,7 +50,7 @@ CREATE TABLE inventory_items (
     created_at          DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE stock_movements (
+CREATE TABLE IF NOT EXISTS stock_movements (
     id                  BIGINT AUTO_INCREMENT PRIMARY KEY,
     inventory_item_id   BIGINT NOT NULL,
     movement_type       ENUM('RESTOCK','SALE','CANCEL','ADJUSTMENT') NOT NULL,
@@ -55,19 +60,3 @@ CREATE TABLE stock_movements (
     created_at          DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
     INDEX idx_sm_inventory (inventory_item_id)
 );
-
--- Copy stock cũ sang inventory_items (chạy lần đầu trên DB có sẵn stock)
-INSERT INTO inventory_items (product_variant_id, sku, cached_stock, created_at)
-SELECT pv.id, pv.sku, COALESCE(pv.stock, 0), NOW()
-FROM product_variants pv
-WHERE NOT EXISTS (
-    SELECT 1 FROM inventory_items ii WHERE ii.product_variant_id = pv.id
-);
-
--- Audit trail cho stock ban đầu
-INSERT INTO stock_movements (inventory_item_id, movement_type, quantity, note, created_at)
-SELECT ii.id, 'RESTOCK', ii.cached_stock, 'Initial stock migration', NOW()
-FROM inventory_items ii
-WHERE ii.cached_stock > 0;
-
-ALTER TABLE product_variants DROP COLUMN stock;
