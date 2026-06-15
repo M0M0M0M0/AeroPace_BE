@@ -84,7 +84,6 @@ public class AuthService {
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
 
-        userRepository.save(user);
         // CREATE PROFILE
         User savedUser = userRepository.save(user);
         CustomerProfile profile = new CustomerProfile();

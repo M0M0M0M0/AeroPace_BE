@@ -131,16 +131,14 @@ public class ProductService {
 
         //categories
         if (request.getCategoryIds() != null) {
-            for (Long catId : request.getCategoryIds()) {
-                categoryRepository.findById(catId).ifPresent(category -> {
-                    ProductCategoryId pcId = new ProductCategoryId(savedProduct.getId(), catId);
-                    ProductCategory pc = new ProductCategory();
-                    pc.setId(pcId);
-                    pc.setProduct(savedProduct);
-                    pc.setCategory(category);
-                    productCategoryRepository.save(pc);
-                });
-            }
+            categoryRepository.findAllById(request.getCategoryIds()).forEach(category -> {
+                ProductCategoryId pcId = new ProductCategoryId(savedProduct.getId(), category.getId());
+                ProductCategory pc = new ProductCategory();
+                pc.setId(pcId);
+                pc.setProduct(savedProduct);
+                pc.setCategory(category);
+                productCategoryRepository.save(pc);
+            });
         }
 
         return getProductsByIds(List.of(savedProduct.getId())).get(0);
@@ -429,20 +427,7 @@ public class ProductService {
         List<ProductResponse> products = productPage.getContent();
 
         List<Long> ids = products.stream().map(ProductResponse::getId).toList();
-
-        var images    = productImageRepository.getImagesByProductIds(ids);
-        var variants  = productVariantRepository.getVariantsByProductIds(ids);
-        var categories = categoryRepository.getByProductIds(ids);
-
-        Map<Long, List<ProductImageDto>>    imageMap    = images.stream().collect(Collectors.groupingBy(ProductImageDto::getProductId));
-        Map<Long, List<ProductVariantDto>>  variantMap  = variants.stream().collect(Collectors.groupingBy(ProductVariantDto::getProductId));
-        Map<Long, List<CategoryDto>>        categoryMap = categories.stream().collect(Collectors.groupingBy(CategoryDto::getProductId));
-
-        for (ProductResponse p : products) {
-            p.setImages(imageMap.getOrDefault(p.getId(), List.of()));
-            p.setVariants(variantMap.getOrDefault(p.getId(), List.of()));
-            p.setCategories(categoryMap.getOrDefault(p.getId(), List.of()));
-        }
+        enrichProducts(products, ids);
 
         return Map.of(
                 "products", products,
@@ -483,20 +468,7 @@ public class ProductService {
         if (products.isEmpty()) return Map.of("products", List.of(), "totalPages", 0);
 
         List<Long> ids = products.stream().map(ProductResponse::getId).toList();
-
-        var images     = productImageRepository.getImagesByProductIds(ids);
-        var variants   = productVariantRepository.getVariantsByProductIds(ids);
-        var categories = categoryRepository.getByProductIds(ids);
-
-        Map<Long, List<ProductImageDto>>   imageMap    = images.stream().collect(Collectors.groupingBy(ProductImageDto::getProductId));
-        Map<Long, List<ProductVariantDto>> variantMap  = variants.stream().collect(Collectors.groupingBy(ProductVariantDto::getProductId));
-        Map<Long, List<CategoryDto>>       categoryMap = categories.stream().collect(Collectors.groupingBy(CategoryDto::getProductId));
-
-        for (ProductResponse p : products) {
-            p.setImages(imageMap.getOrDefault(p.getId(), List.of()));
-            p.setVariants(variantMap.getOrDefault(p.getId(), List.of()));
-            p.setCategories(categoryMap.getOrDefault(p.getId(), List.of()));
-        }
+        enrichProducts(products, ids);
 
         return Map.of(
                 "products", products,
@@ -535,23 +507,11 @@ public class ProductService {
      * Page size cố định 20.
      */
     public Map<String, Object> getAllProductDetailForAdmin(int page) {
-        Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "updatedAt"));        Page<ProductResponse> productPage = productRepository.getProductsForAdmin(pageable);
+        Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        Page<ProductResponse> productPage = productRepository.getProductsForAdmin(pageable);
         List<ProductResponse> products = productPage.getContent();
         List<Long> ids = products.stream().map(ProductResponse::getId).toList();
-
-        var images     = productImageRepository.getImagesByProductIds(ids);
-        var variants   = productVariantRepository.getVariantsByProductIds(ids);
-        var categories = categoryRepository.getByProductIds(ids);
-
-        Map<Long, List<ProductImageDto>>   imageMap    = images.stream().collect(Collectors.groupingBy(ProductImageDto::getProductId));
-        Map<Long, List<ProductVariantDto>> variantMap  = variants.stream().collect(Collectors.groupingBy(ProductVariantDto::getProductId));
-        Map<Long, List<CategoryDto>>       categoryMap = categories.stream().collect(Collectors.groupingBy(CategoryDto::getProductId));
-
-        for (ProductResponse p : products) {
-            p.setImages(imageMap.getOrDefault(p.getId(), List.of()));
-            p.setVariants(variantMap.getOrDefault(p.getId(), List.of()));
-            p.setCategories(categoryMap.getOrDefault(p.getId(), List.of()));
-        }
+        enrichProducts(products, ids);
 
         return Map.of(
                 "products", products,
@@ -656,26 +616,14 @@ public class ProductService {
         if (products.isEmpty()) return Map.of("products", List.of(), "totalPages", 0);
 
         List<Long> ids = products.stream().map(ProductResponse::getId).toList();
-
-        var images     = productImageRepository.getImagesByProductIds(ids);
-        var variants   = productVariantRepository.getVariantsByProductIds(ids);
-        var categories = categoryRepository.getByProductIds(ids);
-
-        Map<Long, List<ProductImageDto>>   imageMap    = images.stream().collect(Collectors.groupingBy(ProductImageDto::getProductId));
-        Map<Long, List<ProductVariantDto>> variantMap  = variants.stream().collect(Collectors.groupingBy(ProductVariantDto::getProductId));
-        Map<Long, List<CategoryDto>>       categoryMap = categories.stream().collect(Collectors.groupingBy(CategoryDto::getProductId));
-
-        for (ProductResponse p : products) {
-            p.setImages(imageMap.getOrDefault(p.getId(), List.of()));
-            p.setVariants(variantMap.getOrDefault(p.getId(), List.of()));
-            p.setCategories(categoryMap.getOrDefault(p.getId(), List.of()));
-        }
+        enrichProducts(products, ids);
 
         return Map.of(
                 "products", products,
                 "totalPages", productPage.getTotalPages()
         );
     }
+
     // Helper extract
     private void enrichProducts(List<ProductResponse> products, List<Long> ids) {
         var images     = productImageRepository.getImagesByProductIds(ids);

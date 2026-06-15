@@ -190,9 +190,9 @@ public class ReviewService {
         };
 
         Pageable pageable = PageRequest.of(page, size, sort);
-        return reviewRepository
-                .findActiveByProduct(productId, filterRating, pageable)
-                .map(this::toResponse);
+        Page<Review> reviews = reviewRepository.findActiveByProduct(productId, filterRating, pageable);
+        Map<Long, CustomerProfile> profileMap = batchLoadProfiles(reviews.getContent());
+        return reviews.map(r -> toResponse(r, profileMap));
     }
 
     // ----------------------------------------------------------------
@@ -227,8 +227,9 @@ public class ReviewService {
         if (!order.getUser().getId().equals(user.getId())) {
             throw new AppException(ErrorCode.ORDER_ACCESS_DENIED);
         }
-        return reviewRepository.findActiveByOrderId(order.getId())
-                .stream().map(this::toResponse).collect(java.util.stream.Collectors.toList());
+        List<Review> reviews = reviewRepository.findActiveByOrderId(order.getId());
+        Map<Long, CustomerProfile> profileMap = batchLoadProfiles(reviews);
+        return reviews.stream().map(r -> toResponse(r, profileMap)).toList();
     }
 
     // ----------------------------------------------------------------
@@ -238,8 +239,9 @@ public class ReviewService {
     public Page<ReviewResponse> adminListReviews(Long productId, ReviewStatus status,
                                                   BigDecimal rating, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return reviewRepository.findAllForAdmin(productId, status, rating, pageable)
-                .map(this::toResponse);
+        Page<Review> reviews = reviewRepository.findAllForAdmin(productId, status, rating, pageable);
+        Map<Long, CustomerProfile> profileMap = batchLoadProfiles(reviews.getContent());
+        return reviews.map(r -> toResponse(r, profileMap));
     }
 
     // ----------------------------------------------------------------
@@ -294,13 +296,18 @@ public class ReviewService {
     }
 
     public ReviewResponse toResponse(Review review) {
+        CustomerProfile profile = customerProfileRepository.findByUser_Id(review.getUser().getId())
+                .orElseThrow(() -> new AppException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));
+        return toResponse(review, Map.of(review.getUser().getId(), profile));
+    }
+
+    private ReviewResponse toResponse(Review review, Map<Long, CustomerProfile> profileMap) {
         ReviewResponse dto = new ReviewResponse();
         dto.setId(review.getId());
         dto.setProductId(review.getProduct().getId());
         dto.setUserId(review.getUser().getId());
-        CustomerProfile customerProfile = customerProfileRepository.findByUser_Id(review.getUser().getId())
-                .orElseThrow(()-> new AppException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));
-        dto.setUserName(customerProfile.getFullName());
+        CustomerProfile profile = profileMap.get(review.getUser().getId());
+        dto.setUserName(profile != null ? profile.getFullName() : "");
         dto.setVariantName(buildVariantName(review.getVariant()));
         dto.setRating(review.getRating());
         dto.setComment(review.getComment());
@@ -309,6 +316,12 @@ public class ReviewService {
         dto.setCreatedAt(review.getCreatedAt());
         dto.setCanEdit(computeCanEdit(review));
         return dto;
+    }
+
+    private Map<Long, CustomerProfile> batchLoadProfiles(List<Review> reviews) {
+        List<Long> userIds = reviews.stream().map(r -> r.getUser().getId()).distinct().toList();
+        return customerProfileRepository.findByUser_IdIn(userIds)
+                .stream().collect(java.util.stream.Collectors.toMap(cp -> cp.getUser().getId(), cp -> cp));
     }
     private String buildVariantName(ProductVariant variant) {
         return java.util.stream.Stream.of(

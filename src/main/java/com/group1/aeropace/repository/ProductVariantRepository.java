@@ -2,6 +2,7 @@ package com.group1.aeropace.repository;
 
 import com.group1.aeropace.dto.product.ProductVariantDto;
 import com.group1.aeropace.entity.ProductVariant;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -14,6 +15,7 @@ public interface ProductVariantRepository extends JpaRepository<ProductVariant, 
 
     Optional<ProductVariant> findFirstByProductIdAndIsDeletedFalseOrderByIdAsc(Long productId);
 
+    @EntityGraph(attributePaths = {"product"})
     List<ProductVariant> findByStockLessThanEqualAndIsDeletedFalseOrderByStockAsc(int stock);
 
     @Query("""

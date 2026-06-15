@@ -133,12 +133,10 @@ public class OrderService {
         order.setWard(request.getWard());
         order.setDistrict(request.getDistrict());
         order.setProvince(request.getProvince());
-        order.setShippingMethod(shippingMethodRepository.findById(request.getShippingMethodId())
-                .orElseThrow( () -> new AppException(ErrorCode.SHIPPING_METHOD_NOT_FOUND))
-                .getName());
-        order.setShippingFee(shippingMethodRepository.findById(request.getShippingMethodId())
-                .orElseThrow(()-> new AppException(ErrorCode.SHIPPING_METHOD_NOT_FOUND))
-                .getFee());
+        ShippingMethod shippingMethod = shippingMethodRepository.findById(request.getShippingMethodId())
+                .orElseThrow(() -> new AppException(ErrorCode.SHIPPING_METHOD_NOT_FOUND));
+        order.setShippingMethod(shippingMethod.getName());
+        order.setShippingFee(shippingMethod.getFee());
         order.setPaymentOrderId(request.getPaymentOrderId());
         order.setOrderCode(generateOrderCode());
         // Save trước để có orderId cho OrderItem FK
