@@ -53,4 +53,28 @@ public class OrderEventListener {
                         freshOrder.getUser().getId(), freshOrder.getOrderCode())
         );
     }
+
+    //đảm bảo chỉ gửi email khi refund đã commit thành công vào DB
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleRefundCompleted(RefundCompletedEvent event) {
+        Order order = event.getOrder();
+
+        // Re-fetch order sau commit
+        Order freshOrder = orderRepository.findById(order.getId())
+                .orElseGet(() -> {
+                    log.warn("[Event] Không tìm thấy order id={}", order.getId());
+                    return null;
+                });
+
+        if (freshOrder == null) return;
+
+        userRepository.findById(freshOrder.getUser().getId()).ifPresentOrElse(
+                fullUser -> {
+                    freshOrder.setUser(fullUser);
+                    emailService.sendRefundConfirmationEmail(freshOrder);
+                },
+                () -> log.warn("[Event] Không tìm thấy user id={} để gửi email refund đơn {}",
+                        freshOrder.getUser().getId(), freshOrder.getOrderCode())
+        );
+    }
 }

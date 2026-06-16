@@ -210,6 +210,109 @@ public class EmailTemplateBuilder {
         );
     }
 
+    public String buildRefundConfirmation(Order order) {
+        return """
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                  <meta charset="UTF-8"/>
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                  <title>Xác nhận hoàn tiền</title>
+                </head>
+                <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+                  <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:32px 0;">
+                    <tr><td align="center">
+                      <table width="620" cellpadding="0" cellspacing="0"
+                             style="background:#ffffff;border-radius:8px;overflow:hidden;
+                                    box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+                        <!-- HEADER -->
+                        <tr>
+                          <td style="background:#1a1a2e;padding:28px 40px;text-align:center;">
+                            <h1 style="margin:0;color:#ffffff;font-size:26px;letter-spacing:2px;">
+                              AeroPace
+                            </h1>
+                            <p style="margin:6px 0 0;color:#a0a8c0;font-size:13px;">
+                              Xác nhận hoàn tiền
+                            </p>
+                          </td>
+                        </tr>
+
+                        <!-- GREETING -->
+                        <tr>
+                          <td style="padding:32px 40px 0;">
+                            <p style="margin:0;font-size:15px;color:#333;">
+                              Xin chào <strong>%s</strong>,
+                            </p>
+                            <p style="margin:10px 0 0;font-size:14px;color:#555;line-height:1.6;">
+                              Yêu cầu hoàn tiền cho đơn hàng của bạn tại <strong>AeroPace</strong>
+                              đã được xử lý thành công.
+                            </p>
+                          </td>
+                        </tr>
+
+                        <!-- REFUND INFO -->
+                        <tr>
+                          <td style="padding:24px 40px 0;">
+                            <table width="100%%" cellpadding="10" cellspacing="0"
+                                   style="background:#f8f9fc;border-radius:6px;font-size:14px;">
+                              <tr>
+                                <td style="color:#777;width:40%%;">Mã đơn hàng</td>
+                                <td style="color:#1a1a2e;font-weight:bold;">%s</td>
+                              </tr>
+                              <tr>
+                                <td style="color:#777;">Số tiền hoàn</td>
+                                <td style="color:#333;font-weight:bold;">%s ₫</td>
+                              </tr>
+                              <tr>
+                                <td style="color:#777;">Phương thức thanh toán</td>
+                                <td style="color:#333;">%s</td>
+                              </tr>
+                              <tr>
+                                <td style="color:#777;">Lý do hoàn tiền</td>
+                                <td style="color:#333;">%s</td>
+                              </tr>
+                              <tr>
+                                <td style="color:#777;">Trạng thái</td>
+                                <td>
+                                  <span style="background:#89fc62;
+                                               padding:3px 10px;border-radius:12px;font-size:12px;">
+                                    Đã hoàn tiền
+                                  </span>
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+
+                        <!-- FOOTER -->
+                        <tr>
+                          <td style="padding:32px 40px;text-align:center;border-top:1px solid #eee;margin-top:24px;">
+                            <p style="margin:0;font-size:14px;color:#555;">
+                              Số tiền sẽ được hoàn về phương thức thanh toán ban đầu của bạn
+                              trong vài ngày làm việc tới.
+                            </p>
+                            <p style="margin:8px 0 0;font-size:12px;color:#999;">
+                              Nếu có thắc mắc, vui lòng liên hệ bộ phận hỗ trợ của chúng tôi.
+                            </p>
+                          </td>
+                        </tr>
+
+                      </table>
+                    </td></tr>
+                  </table>
+                </body>
+                </html>
+                """.formatted(
+                order.getReceiverName(),
+                order.getOrderCode(),
+                formatVnd(calculateGrandTotal(order)),
+                order.getPaymentMethod().name(),
+                order.getRefundReason() != null && !order.getRefundReason().isBlank()
+                        ? order.getRefundReason() : "Không có"
+        );
+    }
+
     private String buildItemRows(List<OrderItem> items) {
         if (items == null || items.isEmpty()) return "";
 

@@ -6,12 +6,15 @@ import com.group1.aeropace.entity.Order;
 import com.group1.aeropace.enums.OrderStatus;
 import com.group1.aeropace.enums.PaymentMethod;
 import com.group1.aeropace.enums.PaymentStatus;
+import com.group1.aeropace.event.RefundCompletedEvent;
 import com.group1.aeropace.repository.OrderRepository;
 import com.group1.aeropace.shared.exception.AppException;
 import com.group1.aeropace.shared.exception.ErrorCode;
 import com.stripe.exception.StripeException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RefundService {
@@ -25,6 +28,10 @@ public class RefundService {
     @Autowired
     private StripeService stripeService;
 
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
+    @Transactional
     public RefundResponse refund(String orderCode, RefundRequest request) {
         Order order = orderRepository.findByOrderCode(orderCode)
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
@@ -49,6 +56,8 @@ public class RefundService {
         order.setPaymentStatus(PaymentStatus.REFUNDED);
         order.setRefundReason(request.getRefundReason());
         orderRepository.save(order);
+
+        eventPublisher.publishEvent(new RefundCompletedEvent(this, order));
 
         return RefundResponse.builder()
                 .success(true)
