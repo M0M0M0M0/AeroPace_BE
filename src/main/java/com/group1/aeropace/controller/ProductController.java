@@ -68,9 +68,10 @@ public class ProductController {
     // =========================================================
     @GetMapping("/detail")
     public Map<String, Object> getAllProductDetail(
-            @RequestParam(defaultValue = "0") int page
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String sort
     ) {
-        return productService.getAllProductDetail(page);
+        return productService.getAllProductDetail(page, sort);
     }
 
     // =========================================================
@@ -89,10 +90,11 @@ public class ProductController {
             @RequestParam(required = false) BigDecimal minRating,
             @RequestParam(required = false) BigDecimal maxRating,
             @RequestParam(required = false) Integer minReviewCount,
-            @RequestParam(required = false) Integer maxReviewCount
+            @RequestParam(required = false) Integer maxReviewCount,
+            @RequestParam(required = false) String sort
     ) {
         return productService.filterProducts(
-                name, brands, categories, minPrice, maxPrice, page, minRating, maxRating, minReviewCount, maxReviewCount
+                name, brands, categories, minPrice, maxPrice, page, minRating, maxRating, minReviewCount, maxReviewCount, sort
         );
     }
 }

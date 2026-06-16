@@ -29,4 +29,14 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
             @Param("to") LocalDateTime to,
             @Param("limit") int limit
     );
+
+    @Query("""
+        SELECT pv.product.id, SUM(oi.quantity)
+        FROM OrderItem oi
+        JOIN oi.productVariant pv
+        JOIN oi.order o
+        WHERE o.status <> 'CANCELLED'
+        GROUP BY pv.product.id
+    """)
+    List<Object[]> findTotalSoldByProduct();
 }

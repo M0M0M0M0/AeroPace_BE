@@ -1,11 +1,7 @@
 -- ============================================================
 -- V2: Inventory + Historical Product
 -- ============================================================
--- On existing DBs: this file is skipped (baseline-version=2).
--- On fresh DBs: V1 already creates all tables below, so these are no-ops.
--- The stock column migration is not needed on fresh DBs (V1 has no stock column
--- and no existing data), and existing DBs were migrated via migration.sql before
--- Flyway was adopted.
+
 
 CREATE TABLE IF NOT EXISTS historical_products (
     id              BIGINT AUTO_INCREMENT PRIMARY KEY,

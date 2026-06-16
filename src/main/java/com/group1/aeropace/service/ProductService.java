@@ -470,9 +470,19 @@ public class ProductService {
     /**
      * Lấy danh sách product phân trang cho client (chỉ hiển thị product active).
      * Page size cố định 20.
+     *
+     * @param sort "price,asc" | "price,desc" | "createdAt,desc" | "sold,desc" — null/không nhận diện được thì giữ mặc định (updatedAt desc).
      */
-    public Map<String, Object> getAllProductDetail(int page) {
-        Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "updatedAt"));
+    public Map<String, Object> getAllProductDetail(int page, String sort) {
+        SortField sortField = parseSort(sort);
+
+        if (sortField == SortField.PRICE_ASC || sortField == SortField.PRICE_DESC || sortField == SortField.BESTSELLER) {
+            List<ProductResponse> all = productRepository.getProducts(Pageable.unpaged()).getContent();
+            return sortAndPaginate(all, sortField, page);
+        }
+
+        String sortProperty = sortField == SortField.NEWEST ? "createdAt" : "updatedAt";
+        Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, sortProperty));
         Page<ProductResponse> productPage = productRepository.getProducts(pageable);
         List<ProductResponse> products = productPage.getContent();
 
@@ -489,6 +499,8 @@ public class ProductService {
      * Tìm kiếm và filter product cho client với nhiều tiêu chí kết hợp.
      * List rỗng ({@code []}) cho brandIds/categoryIds được coi là "không lọc theo field đó" (tương đương null).
      * Trả về map rỗng thay vì ném exception khi không có kết quả.
+     *
+     * @param sort "price,asc" | "price,desc" | "createdAt,desc" | "sold,desc" — null/không nhận diện được thì giữ mặc định (updatedAt desc).
      */
     @Transactional(readOnly = true)
     public Map<String, Object> filterProducts(
@@ -501,13 +513,26 @@ public class ProductService {
             BigDecimal minRating,
             BigDecimal maxRating,
             Integer minReviewCount,
-            Integer maxReviewCount
+            Integer maxReviewCount,
+            String sort
     ) {
-        Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, "updatedAt"));
         // Normalize: list rỗng hoặc string blank → null để query không bị filter sai
         if (brandIds != null && brandIds.isEmpty()) brandIds = null;
         if (categoryIds != null && categoryIds.isEmpty()) categoryIds = null;
         if (name != null && name.isBlank()) name = null;
+
+        SortField sortField = parseSort(sort);
+
+        if (sortField == SortField.PRICE_ASC || sortField == SortField.PRICE_DESC || sortField == SortField.BESTSELLER) {
+            List<ProductResponse> all = productRepository.filterProducts(
+                    name, brandIds, categoryIds, minPrice, maxPrice, Pageable.unpaged(),
+                    minRating, maxRating, minReviewCount, maxReviewCount
+            ).getContent();
+            return sortAndPaginate(all, sortField, page);
+        }
+
+        String sortProperty = sortField == SortField.NEWEST ? "createdAt" : "updatedAt";
+        Pageable pageable = PageRequest.of(page, 20, Sort.by(Sort.Direction.DESC, sortProperty));
 
         Page<ProductResponse> productPage = productRepository.filterProducts(
                 name, brandIds, categoryIds, minPrice, maxPrice, pageable, minRating, maxRating, minReviewCount, maxReviewCount
@@ -524,6 +549,68 @@ public class ProductService {
                 "products", products,
                 "totalPages", productPage.getTotalPages()
         );
+    }
+
+    private enum SortField { DEFAULT, PRICE_ASC, PRICE_DESC, NEWEST, BESTSELLER }
+
+    private SortField parseSort(String sort) {
+        if (sort == null || sort.isBlank()) return SortField.DEFAULT;
+        return switch (sort) {
+            case "price,asc" -> SortField.PRICE_ASC;
+            case "price,desc" -> SortField.PRICE_DESC;
+            case "createdAt,desc" -> SortField.NEWEST;
+            case "sold,desc" -> SortField.BESTSELLER;
+            default -> SortField.DEFAULT;
+        };
+    }
+
+    /**
+     * Sort theo giá (min price của variant chưa xóa) hoặc theo tổng số lượng đã bán — cả hai đều không phải
+     * cột trực tiếp trên Product nên không thể ORDER BY ở DB. Load toàn bộ kết quả filter (không phân trang),
+     * enrich variant để lấy giá, sort trong Java, rồi tự cắt trang.
+     */
+    private Map<String, Object> sortAndPaginate(List<ProductResponse> all, SortField sortField, int page) {
+        if (all.isEmpty()) return Map.of("products", List.of(), "totalPages", 0);
+
+        List<Long> ids = all.stream().map(ProductResponse::getId).toList();
+        enrichProducts(all, ids);
+
+        Comparator<ProductResponse> comparator = switch (sortField) {
+            case PRICE_ASC -> Comparator.comparing(this::resolveMinPrice);
+            case PRICE_DESC -> Comparator.comparing(this::resolveMinPrice).reversed();
+            case BESTSELLER -> {
+                Map<Long, Long> soldMap = orderItemRepository.findTotalSoldByProduct().stream()
+                        .collect(Collectors.toMap(
+                                r -> ((Number) r[0]).longValue(),
+                                r -> ((Number) r[1]).longValue()
+                        ));
+                yield Comparator.<ProductResponse, Long>comparing(p -> soldMap.getOrDefault(p.getId(), 0L)).reversed();
+            }
+            default -> null;
+        };
+
+        List<ProductResponse> sorted = comparator != null
+                ? all.stream().sorted(comparator).collect(Collectors.toList())
+                : all;
+
+        int totalSize = sorted.size();
+        int totalPages = Math.max(1, (int) Math.ceil(totalSize / 20.0));
+        int from = Math.min(page * 20, totalSize);
+        int to = Math.min(from + 20, totalSize);
+
+        return Map.of(
+                "products", sorted.subList(from, to),
+                "totalPages", totalPages
+        );
+    }
+
+    private BigDecimal resolveMinPrice(ProductResponse p) {
+        if (p.getVariants() == null || p.getVariants().isEmpty()) return BigDecimal.ZERO;
+        return p.getVariants().stream()
+                .map(ProductVariantDto::getPrice)
+                .filter(Objects::nonNull)
+                .min(BigDecimal::compareTo)
+                .orElse(BigDecimal.ZERO);
     }
 
     /**
