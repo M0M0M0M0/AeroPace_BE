@@ -56,6 +56,9 @@ public class CustomerProfile {
     @Column(name = "province", length = 150)
     private String province;
 
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

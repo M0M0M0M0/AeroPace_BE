@@ -22,4 +22,5 @@ public class CustomerProfileResponse {
     private LocalDate dob;
     private String phoneNumber;
     private String gender;
+    private String avatarUrl;
 }

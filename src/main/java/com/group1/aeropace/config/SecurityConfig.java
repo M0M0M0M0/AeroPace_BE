@@ -32,6 +32,9 @@ public class SecurityConfig {
                         // Public
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
+                        // Avatar upload phải public vì dùng được lúc đăng ký (chưa có JWT)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/uploads/avatar").permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/historical/**")
                         .hasAnyRole("USER", "ADMIN")
 

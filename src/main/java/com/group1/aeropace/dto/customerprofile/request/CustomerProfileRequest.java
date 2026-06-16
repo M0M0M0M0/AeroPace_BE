@@ -19,4 +19,5 @@ public class CustomerProfileRequest {
     @Pattern(regexp = "^[0-9]+$", message = "Phone must be numeric")
     private String phoneNumber;
     private String gender;
+    private String avatarUrl;
 }

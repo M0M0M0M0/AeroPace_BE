@@ -20,7 +20,8 @@ public class CustomerProfileMapper {
                 profile.getDistrict(),
                 profile.getDob(),
                 profile.getPhoneNumber(),
-                profile.getGender()
+                profile.getGender(),
+                profile.getAvatarUrl()
         );
     }
 }

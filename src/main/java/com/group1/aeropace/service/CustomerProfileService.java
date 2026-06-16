@@ -10,6 +10,7 @@ import com.group1.aeropace.repository.CustomerProfileRepository;
 import com.group1.aeropace.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,6 +32,7 @@ public class CustomerProfileService {
     // =========================================================
     // API 1: Tạo customer profile
     // =========================================================
+    @Transactional
     public CustomerProfileResponse createCustomerProfile(CustomerProfileRequest request) {
         if (request.getUserId() == null || request.getFullName() == null || request.getFullName().isBlank()) {
             throw new AppException(ErrorCode.INVALID_INPUT);
@@ -54,6 +56,7 @@ public class CustomerProfileService {
         profile.setDob(request.getDob());
         profile.setPhoneNumber(request.getPhoneNumber());
         profile.setGender(request.getGender());
+        profile.setAvatarUrl(request.getAvatarUrl());
         profile.setCreatedAt(LocalDateTime.now());
         profile.setUpdatedAt(LocalDateTime.now());
 
@@ -65,6 +68,7 @@ public class CustomerProfileService {
     // =========================================================
     // API 2: Lấy tất cả customer profile
     // =========================================================
+    @Transactional(readOnly = true)
     public List<CustomerProfileResponse> getAllCustomerProfiles() {
         return customerProfileRepository.findAll()
                 .stream()
@@ -75,6 +79,7 @@ public class CustomerProfileService {
     // =========================================================
     // API 3: Lấy customer profile theo id
     // =========================================================
+    @Transactional(readOnly = true)
     public CustomerProfileResponse getCustomerProfileById(Long id) {
         CustomerProfile profile = customerProfileRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));
@@ -84,6 +89,7 @@ public class CustomerProfileService {
     // =========================================================
     // API 4: Lấy customer profile theo userId
     // =========================================================
+    @Transactional(readOnly = true)
     public CustomerProfileResponse getCustomerProfileByUserId(Long userId) {
         CustomerProfile profile = customerProfileRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));
@@ -94,6 +100,7 @@ public class CustomerProfileService {
     // =========================================================
     // API 5: Cập nhật customer profile
     // =========================================================
+    @Transactional
     public CustomerProfileResponse updateCustomerProfile(Long id, CustomerProfileRequest request) {
         CustomerProfile profile = customerProfileRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));
@@ -110,6 +117,7 @@ public class CustomerProfileService {
         profile.setDob(request.getDob());
         profile.setPhoneNumber(request.getPhoneNumber());
         profile.setGender(request.getGender());
+        profile.setAvatarUrl(request.getAvatarUrl());
         profile.setUpdatedAt(LocalDateTime.now());
 
         CustomerProfile updated = customerProfileRepository.save(profile);
@@ -120,6 +128,7 @@ public class CustomerProfileService {
     // =========================================================
     // API 6: Xóa customer profile
     // =========================================================
+    @Transactional
     public void deleteCustomerProfile(Long id) {
         CustomerProfile profile = customerProfileRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));
@@ -140,10 +149,12 @@ public class CustomerProfileService {
                 profile.getProvince(),
                 profile.getDob(),
                 profile.getPhoneNumber(),
-                profile.getGender()
+                profile.getGender(),
+                profile.getAvatarUrl()
         );
     }
     //lay profile theo user_id
+    @Transactional(readOnly = true)
     public CustomerProfileResponse getByUserId(Long userId) {
         CustomerProfile profile = customerProfileRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));

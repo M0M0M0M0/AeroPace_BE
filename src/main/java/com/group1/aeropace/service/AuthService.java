@@ -94,6 +94,7 @@ public class AuthService {
         profile.setPhoneNumber("");
         profile.setGender("");
         profile.setDob(null);
+        profile.setAvatarUrl(request.getAvatarUrl());
 
         profile.setCreatedAt(LocalDateTime.now());
         profile.setUpdatedAt(LocalDateTime.now());

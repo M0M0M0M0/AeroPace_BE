@@ -54,6 +54,9 @@ public enum ErrorCode {
     HISTORICAL_PRODUCT_NOT_FOUND("3043", "Historical product not found", HttpStatus.NOT_FOUND),
     ORDER_PRODUCT_MISMATCH("3044", "This order does not contain the requested product", HttpStatus.FORBIDDEN),
 
+    INVALID_IMAGE_FILE("3045", "Invalid image file (only JPEG/PNG/WEBP up to 5MB allowed)", HttpStatus.BAD_REQUEST),
+    IMAGE_UPLOAD_FAILED("3046", "Image upload failed, please try again", HttpStatus.INTERNAL_SERVER_ERROR),
+
     INTERNAL_ERROR("9999", "Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
     private final String code;
     private final String message;
