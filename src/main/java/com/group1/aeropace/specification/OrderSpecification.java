@@ -10,7 +10,7 @@ public class OrderSpecification {
     public static Specification<Order> build(
             String orderCode, String receiverName, String phoneNumber,
             String shippingAddress, String status,
-            String dateFrom, String dateTo
+            String dateFrom, String dateTo, Long userId
     ) {
         return Specification
                 .where(likeOrderCode(orderCode))
@@ -19,7 +19,8 @@ public class OrderSpecification {
                 .and(likeAddress(shippingAddress))
                 .and(equalStatus(status))
                 .and(fromDate(dateFrom))
-                .and(toDate(dateTo));
+                .and(toDate(dateTo))
+                .and(equalUserId(userId));
     }
 
     private static Specification<Order> likeOrderCode(String orderCode) {
@@ -70,6 +71,13 @@ public class OrderSpecification {
             if (dateTo == null || dateTo.isBlank()) return null;
             return cb.lessThanOrEqualTo(root.get("createdAt"),
                     LocalDate.parse(dateTo).atTime(23, 59, 59));
+        };
+    }
+
+    private static Specification<Order> equalUserId(Long userId) {
+        return (root, query, cb) -> {
+            if (userId == null) return null;
+            return cb.equal(root.get("user").get("id"), userId);
         };
     }
 }

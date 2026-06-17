@@ -516,14 +516,15 @@ public class OrderService {
     public List<OrderListResponse> getAllOrders(
             String orderCode, String receiverName, String phoneNumber,
             String shippingAddress, String status,
-            String dateFrom, String dateTo
+            String dateFrom, String dateTo, Long userId
     ) {
         var spec = OrderSpecification.build(
-                orderCode, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo
+                orderCode, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo, userId
         );
         return orderRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "id"))
                 .stream()
                 .map(this::mapToOrderListResponse)
+                .filter(order -> order.getPaymentStatus() != PaymentStatus.FAILED)
                 .toList();
     }
 

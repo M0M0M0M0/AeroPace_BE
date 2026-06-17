@@ -30,10 +30,11 @@ public class AdminOrderController {
             @RequestParam(required = false) String shippingAddress,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String dateFrom,
-            @RequestParam(required = false) String dateTo
+            @RequestParam(required = false) String dateTo,
+            @RequestParam(required = false) Long userId
     ) {
         return orderService.getAllOrders(
-                orderCode, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo
+                orderCode, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo, userId
         );
     }
     //update order status
