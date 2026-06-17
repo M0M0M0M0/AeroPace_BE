@@ -24,10 +24,6 @@ public class UploadService {
 
     private final Cloudinary cloudinary;
 
-    /**
-     * Upload một file ảnh lên Cloudinary trong folder chỉ định.
-     * @return secure_url của ảnh đã upload
-     */
     public String uploadImage(MultipartFile file, String folder) {
         if (file == null || file.isEmpty()) {
             throw new AppException(ErrorCode.INVALID_IMAGE_FILE);
@@ -46,7 +42,7 @@ public class UploadService {
             ));
             return (String) result.get("secure_url");
         } catch (IOException e) {
-            log.error("[Upload] Upload ảnh lên Cloudinary thất bại: {}", e.getMessage(), e);
+            log.error("[Upload] IOException khi upload: {}", e.getMessage(), e);
             throw new AppException(ErrorCode.IMAGE_UPLOAD_FAILED);
         }
     }
