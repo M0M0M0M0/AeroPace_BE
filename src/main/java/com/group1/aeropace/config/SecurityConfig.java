@@ -29,10 +29,10 @@ public class SecurityConfig {
                 .formLogin(form -> form.disable())
                 .authorizeHttpRequests(auth -> auth
 
-                        // Public
+                        // Công khai
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
-                        // Avatar upload phải public vì dùng được lúc đăng ký (chưa có JWT)
+                        // Avatar upload công khai vì dùng được ngay lúc đăng ký (chưa có JWT)
                         .requestMatchers(HttpMethod.POST, "/api/v1/uploads/avatar").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/historical/**")
@@ -46,23 +46,22 @@ public class SecurityConfig {
                         .hasAnyRole("USER", "ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
 
-                        // Cart
+                        // Giỏ hàng
                         .requestMatchers("/api/v1/cart/**")
                         .hasAnyRole("USER", "ADMIN")
 
-                        // Customer profile
+                        // Hồ sơ khách hàng
                         .requestMatchers("/api/v1/customer-profiles/**")
                         .hasAnyRole("USER", "ADMIN")
 
-                        // Orders
+                        // Đơn hàng
                         .requestMatchers(HttpMethod.POST, "/api/v1/orders/**")
                         .hasAnyRole("USER", "ADMIN")
 
                         .requestMatchers(HttpMethod.GET, "/api/v1/orders/**")
                         .hasAnyRole("USER", "ADMIN")
 
-
-                        // Product management
+                        // Quản lý sản phẩm
                         .requestMatchers(HttpMethod.POST, "/api/v1/products/**")
                         .hasRole("ADMIN")
 
@@ -72,7 +71,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/products/**")
                         .hasRole("ADMIN")
 
-                        // Category management
+                        // Quản lý danh mục
                         .requestMatchers(HttpMethod.POST, "/api/v1/categories/**")
                         .hasRole("ADMIN")
 
@@ -84,17 +83,18 @@ public class SecurityConfig {
 
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/categories/**")
                         .hasRole("ADMIN")
-                        // Review management
-                        .requestMatchers(HttpMethod.POST,"/api/v1/reviews/**")
+
+                        // Quản lý đánh giá
+                        .requestMatchers(HttpMethod.POST, "/api/v1/reviews/**")
                         .hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT,"/api/v1/reviews/**")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/reviews/**")
                         .hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.PATCH,"/api/v1/reviews/**")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/reviews/**")
                         .hasAnyRole("USER", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE,"/api/v1/reviews/**")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/reviews/**")
                         .hasAnyRole("USER", "ADMIN")
 
-                        // Brand management
+                        // Quản lý thương hiệu
                         .requestMatchers(HttpMethod.POST, "/api/v1/brands/**")
                         .hasRole("ADMIN")
 
@@ -107,7 +107,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/brands/**")
                         .hasRole("ADMIN")
 
-                        //Shipping method management
+                        // Quản lý phương thức vận chuyển
                         .requestMatchers(HttpMethod.POST, "/api/v1/shipping_methods/**")
                         .hasRole("ADMIN")
 
@@ -120,7 +120,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/shipping_methods/**")
                         .hasRole("ADMIN")
 
-                        // Admin APIs
+                        // API admin
                         .requestMatchers("/api/v1/admin/**")
                         .hasRole("ADMIN")
 

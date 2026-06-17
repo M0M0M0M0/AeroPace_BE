@@ -1,4 +1,4 @@
-package com.group1.aeropace.service;
+﻿package com.group1.aeropace.service;
 
 import com.group1.aeropace.dto.customerprofile.request.CustomerProfileRequest;
 import com.group1.aeropace.dto.customerprofile.response.CustomerProfileResponse;
@@ -29,9 +29,6 @@ public class CustomerProfileService {
     @Autowired
     private UserRepository userRepository;
 
-    // =========================================================
-    // API 1: Tạo customer profile
-    // =========================================================
     @Transactional
     public CustomerProfileResponse createCustomerProfile(CustomerProfileRequest request) {
         if (request.getUserId() == null || request.getFullName() == null || request.getFullName().isBlank()) {
@@ -65,9 +62,6 @@ public class CustomerProfileService {
         return mapToResponse(saved);
     }
 
-    // =========================================================
-    // API 2: Lấy tất cả customer profile
-    // =========================================================
     @Transactional(readOnly = true)
     public List<CustomerProfileResponse> getAllCustomerProfiles() {
         return customerProfileRepository.findAll()
@@ -76,9 +70,6 @@ public class CustomerProfileService {
                 .toList();
     }
 
-    // =========================================================
-    // API 3: Lấy customer profile theo id
-    // =========================================================
     @Transactional(readOnly = true)
     public CustomerProfileResponse getCustomerProfileById(Long id) {
         CustomerProfile profile = customerProfileRepository.findById(id)
@@ -86,9 +77,6 @@ public class CustomerProfileService {
         return mapToResponse(profile);
     }
 
-    // =========================================================
-    // API 4: Lấy customer profile theo userId
-    // =========================================================
     @Transactional(readOnly = true)
     public CustomerProfileResponse getCustomerProfileByUserId(Long userId) {
         CustomerProfile profile = customerProfileRepository.findByUser_Id(userId)
@@ -97,9 +85,6 @@ public class CustomerProfileService {
         return mapToResponse(profile);
     }
 
-    // =========================================================
-    // API 5: Cập nhật customer profile
-    // =========================================================
     @Transactional
     public CustomerProfileResponse updateCustomerProfile(Long id, CustomerProfileRequest request) {
         CustomerProfile profile = customerProfileRepository.findById(id)
@@ -125,9 +110,6 @@ public class CustomerProfileService {
         return mapToResponse(updated);
     }
 
-    // =========================================================
-    // API 6: Xóa customer profile
-    // =========================================================
     @Transactional
     public void deleteCustomerProfile(Long id) {
         CustomerProfile profile = customerProfileRepository.findById(id)

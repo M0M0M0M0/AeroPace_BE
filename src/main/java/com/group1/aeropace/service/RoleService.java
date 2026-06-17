@@ -1,4 +1,4 @@
-package com.group1.aeropace.service;
+﻿package com.group1.aeropace.service;
 
 import com.group1.aeropace.dto.role.request.RoleRequest;
 import com.group1.aeropace.dto.role.response.RoleResponse;
@@ -18,9 +18,6 @@ public class RoleService {
     @Autowired
     private RoleRepository roleRepository;
 
-    // =========================================================
-    // API 1: Tạo role
-    // =========================================================
     public RoleResponse createRole(RoleRequest request) {
         roleRepository.findByName(request.getName())
                 .ifPresent(role -> {
@@ -37,18 +34,12 @@ public class RoleService {
         return mapToRoleResponse(savedRole);
     }
 
-    // =========================================================
-    // API 2: Lấy tất cả role
-    // =========================================================
     public List<RoleResponse> getAllRoles() {
         return roleRepository.findAll().stream()
                 .map(this::mapToRoleResponse)
                 .toList();
     }
 
-    // =========================================================
-    // API 3: Lấy role theo id
-    // =========================================================
     public RoleResponse getRoleById(Long id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
@@ -56,9 +47,6 @@ public class RoleService {
         return mapToRoleResponse(role);
     }
 
-    // =========================================================
-    // API 4: Cập nhật role
-    // =========================================================
     public RoleResponse updateRole(Long id, RoleRequest request) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
@@ -78,9 +66,6 @@ public class RoleService {
         return mapToRoleResponse(updatedRole);
     }
 
-    // =========================================================
-    // API 5: Xóa role
-    // =========================================================
     public void deleteRole(Long id) {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));

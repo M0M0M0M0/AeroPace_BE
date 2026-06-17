@@ -2,10 +2,10 @@ package com.group1.aeropace.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,22 +30,19 @@ public class CustomerProfile {
     @Column(name = "full_name", length = 150, nullable = false)
     private String fullName;
 
-    @Column(name = "address", length = 500)
-    private String address;
-
-    private LocalDate dob;
-
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
     @Column(name = "gender", length = 20)
     private String gender;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private LocalDate dob;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
+    @Column(name = "address", length = 500)
+    private String address;
 
     @Column(name = "ward", length = 150)
     private String ward;
@@ -56,8 +53,11 @@ public class CustomerProfile {
     @Column(name = "province", length = 150)
     private String province;
 
-    @Column(name = "avatar_url", length = 500)
-    private String avatarUrl;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {

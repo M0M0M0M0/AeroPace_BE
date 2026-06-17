@@ -5,10 +5,11 @@ import com.group1.aeropace.enums.OrderStatus;
 import com.group1.aeropace.enums.PaymentMethod;
 import com.group1.aeropace.enums.PaymentStatus;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -30,11 +31,17 @@ public class Order {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "order_code", unique = true)
+    private String orderCode;
+
     @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
 
     @Column(name = "vat", nullable = false)
     private BigDecimal vat = BigDecimal.ZERO;
+
+    @Column(name = "shipping_fee")
+    private BigDecimal shippingFee;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
@@ -44,26 +51,21 @@ public class Order {
     @Column(nullable = false)
     private PaymentMethod paymentMethod;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status")
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
+    private String paymentOrderId;
+    private String paymentTransactionId;
+
     @Column(name = "receiver_name", length = 255)
     private String receiverName;
-
-    @Column(name = "shipping_address", length = 500)
-    private String shippingAddress;
 
     @Column(name = "phone_number", length = 20)
     private String phoneNumber;
 
-    @Column(name = "note", length = 500)
-    private String note;
-
-    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
-    private List<OrderItem> orderItems = new ArrayList<>();
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "shipping_address", length = 500)
+    private String shippingAddress;
 
     @Column(name = "ward")
     private String ward;
@@ -77,17 +79,8 @@ public class Order {
     @Column(name = "shipping_method")
     private String shippingMethod;
 
-    @Column(name = "shipping_fee")
-    private BigDecimal shippingFee;
-
-    private String paymentOrderId;
-    private String paymentTransactionId;
-    @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status")
-    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
-
-    @Column(name = "order_code", unique = true)
-    private String orderCode;
+    @Column(name = "note", length = 500)
+    private String note;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "cancel_type")
@@ -98,6 +91,15 @@ public class Order {
 
     @Column(name = "refund_reason")
     private String refundReason;
+
+    @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
+    private List<OrderItem> orderItems = new ArrayList<>();
+
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {

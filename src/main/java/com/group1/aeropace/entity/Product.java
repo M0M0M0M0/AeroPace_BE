@@ -1,17 +1,16 @@
 package com.group1.aeropace.entity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "products")
@@ -51,11 +50,11 @@ public class Product {
     @Column(name = "status", length = 20)
     private Status status = Status.ACTIVE;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "average_rating")
+    private BigDecimal averageRating = BigDecimal.ZERO;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "review_count")
+    private Integer reviewCount = 0;
 
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore
@@ -69,20 +68,11 @@ public class Product {
     @JsonIgnore
     private List<ProductCategory> productCategories;
 
-    public enum Status {
-        ACTIVE, DRAFT, ARCHIVED,DELETED;
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
 
-        @JsonCreator
-        public static Status fromValue(String value) {
-            return Status.valueOf(value.toUpperCase());
-        }
-    }
-
-    @Column(name = "average_rating")
-    private BigDecimal averageRating = BigDecimal.ZERO;
-
-    @Column(name = "review_count")
-    private Integer reviewCount = 0;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
@@ -93,5 +83,14 @@ public class Product {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public enum Status {
+        ACTIVE, DRAFT, ARCHIVED, DELETED;
+
+        @JsonCreator
+        public static Status fromValue(String value) {
+            return Status.valueOf(value.toUpperCase());
+        }
     }
 }

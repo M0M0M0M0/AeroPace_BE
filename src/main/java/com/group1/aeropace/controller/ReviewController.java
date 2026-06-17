@@ -1,4 +1,4 @@
-package com.group1.aeropace.controller;
+﻿package com.group1.aeropace.controller;
 
 import com.group1.aeropace.config.CustomUserDetails;
 import com.group1.aeropace.dto.review.*;
@@ -23,10 +23,8 @@ public class ReviewController {
 
     private final ReviewService reviewService;
 
-    // ----------------------------------------------------------------
     // PUBLIC — Danh sách review của sản phẩm
     // GET /products/{productId}/reviews?page=0&size=10&sort=newest&rating=4.5
-    // ----------------------------------------------------------------
     @GetMapping("/products/{productId}/reviews")
     public ResponseEntity<Page<ReviewResponse>> getProductReviews(
             @PathVariable Long productId,
@@ -40,10 +38,8 @@ public class ReviewController {
         );
     }
 
-    // ----------------------------------------------------------------
     // PUBLIC — Rating summary của sản phẩm
     // GET /products/{productId}/rating-summary
-    // ----------------------------------------------------------------
     @GetMapping("/products/{productId}/rating-summary")
     public ResponseEntity<RatingSummaryResponse> getRatingSummary(
             @PathVariable Long productId
@@ -51,10 +47,8 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getRatingSummary(productId));
     }
 
-    // ----------------------------------------------------------------
     // USER — Submit review từ popup sau khi nhận hàng
     // PUT /reviews/submit?orderId=1&productId=2
-    // ----------------------------------------------------------------
     @PostMapping("/reviews/submit-order")
     public ResponseEntity<ReviewResponse> submitReview(
             @RequestParam String orderCode,
@@ -67,10 +61,8 @@ public class ReviewController {
         );
     }
 
-    // ----------------------------------------------------------------
     // USER — Edit review (bản cũ EDITED, tạo bản mới ACTIVE)
     // PUT /reviews/{id}
-    // ----------------------------------------------------------------
     @PutMapping("/reviews/{id}")
     public ResponseEntity<ReviewResponse> editReview(
             @PathVariable Long id,
@@ -80,10 +72,8 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.editReview(id, request, currentUser.getId()));
     }
 
-    // ----------------------------------------------------------------
     // USER — Xoá review của mình
     // DELETE /reviews/{id}
-    // ----------------------------------------------------------------
     @DeleteMapping("/reviews/{id}")
     public ResponseEntity<Void> deleteReview(
             @PathVariable Long id,
@@ -93,10 +83,8 @@ public class ReviewController {
         return ResponseEntity.noContent().build();
     }
 
-    // ----------------------------------------------------------------
     // USER — Lấy tất cả review ACTIVE của mình cho một đơn hàng
     // GET /reviews/my-order/{orderCode}
-    // ----------------------------------------------------------------
     @GetMapping("/reviews/my-order/{orderCode}")
     public ResponseEntity<List<ReviewResponse>> getMyReviewsByOrder(
             @PathVariable String orderCode,
@@ -105,10 +93,8 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getMyReviewsByOrder(orderCode, userDetails));
     }
 
-    // ----------------------------------------------------------------
     // ADMIN — Xoá review bất kỳ kèm lý do
     // DELETE /admin/reviews/{id}
-    // ----------------------------------------------------------------
     @DeleteMapping("/admin/reviews/{id}")
     public ResponseEntity<Void> adminDeleteReview(
             @PathVariable Long id,
@@ -118,10 +104,8 @@ public class ReviewController {
         return ResponseEntity.noContent().build();
     }
 
-    // ----------------------------------------------------------------
     // ADMIN — List tất cả review có filter
     // GET /admin/reviews?productId=1&status=ACTIVE&rating=4.5&page=0&size=20
-    // ----------------------------------------------------------------
     @GetMapping("/admin/reviews")
     public ResponseEntity<Page<ReviewResponse>> adminListReviews(
             @RequestParam(required = false) Long productId,

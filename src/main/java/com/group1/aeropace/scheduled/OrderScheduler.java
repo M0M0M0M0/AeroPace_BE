@@ -51,7 +51,7 @@ public class OrderScheduler {
                 inventoryService.restoreStock(item.getProductVariant().getId(), item.getQuantity(), order.getId());
             }
 
-            log.info("Auto cancelled expired PayPal order: {}, restored stock for {} items",
+            log.info("Đã tự động hủy đơn PayPal hết hạn: {}, hoàn stock cho {} item",
                     order.getId(), items.size());
         });
     }

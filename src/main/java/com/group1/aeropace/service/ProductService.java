@@ -95,7 +95,7 @@ public class ProductService {
         Brand brand = brandRepository.findById(request.getBrandId())
                 .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND));
 
-        //product
+        // Khởi tạo product
         Product product = new Product();
         product.setName(request.getName());
         product.setDescription(request.getDescription());
@@ -109,7 +109,7 @@ public class ProductService {
         product.setUpdatedAt(LocalDateTime.now());
         Product savedProduct = productRepository.save(product);
 
-        //variants
+        // Tạo các variant
         if (request.getVariants() != null) {
             for (ProductFullUpdateRequest.VariantItem v : request.getVariants()) {
                 if (v.getOption1Value() != null && v.getPrice() != null) {
@@ -118,7 +118,7 @@ public class ProductService {
             }
         }
 
-        //images
+        // Lưu ảnh sản phẩm
         if (request.getImages() != null) {
             for (ProductFullUpdateRequest.ImageItem img : request.getImages()) {
                 if (img.getImageUrl() != null && !img.getImageUrl().isBlank()) {
@@ -133,7 +133,7 @@ public class ProductService {
             }
         }
 
-        //categories
+        // Gán category cho product
         if (request.getCategoryIds() != null) {
             categoryRepository.findAllById(request.getCategoryIds()).forEach(category -> {
                 ProductCategoryId pcId = new ProductCategoryId(savedProduct.getId(), category.getId());
@@ -168,7 +168,7 @@ public class ProductService {
                 .replaceAll("-+", "-")
                 .trim();
 
-        //Tranh duplicate slug
+        // Thêm hậu tố số để đảm bảo slug là duy nhất nếu đã tồn tại
         String baseSlug = slug;
         int count = 1;
         while (productRepository.existsBySlug(slug)) {
@@ -282,7 +282,7 @@ public class ProductService {
     }
 
     /**
-     *   soft delete (status = DELETED)
+     * Soft-delete product bằng cách set status = DELETED.
      *
      * @throws AppException PRODUCT_NOT_FOUND nếu id không tồn tại
      */
@@ -704,7 +704,7 @@ public class ProductService {
             LocalDateTime to   = dateTo.atTime(23, 59, 59);
             int resolvedLimit  = (limit != null && limit >= 1 && limit <= 100) ? limit : 10;
 
-            // Lấy ranked productIds từ OrderItem
+            // Lấy danh sách productId được xếp hạng từ OrderItem
             List<Object[]> rows = orderItemRepository.findBestSellerProductIds(from, to, resolvedLimit);
             if (rows.isEmpty()) return Map.of("products", List.of(), "totalPages", 0);
 
@@ -723,7 +723,7 @@ public class ProductService {
             final List<Long> finalCategoryIds = categoryIds;
             final String finalSku = sku;
 
-            // Query khong paginate — rankedIds sort lai
+            // Query không phân trang — kết quả sẽ được sắp xếp lại theo rankedIds
             List<ProductResponse> filtered = productRepository.filterProductsForAdminByIds(
                     finalName, finalBrandIds, finalCategoryIds,
                     minPrice, maxPrice, finalStatuses,
@@ -737,7 +737,7 @@ public class ProductService {
             List<Long> ids = filtered.stream().map(ProductResponse::getId).toList();
             enrichProducts(filtered, ids);
 
-            // gan them totalsold
+            // Gán thêm totalSold vào từng ProductResponse
             Map<Long, ProductResponse> productMap = filtered.stream()
                     .collect(Collectors.toMap(ProductResponse::getId, p -> p));
 
@@ -767,7 +767,7 @@ public class ProductService {
         );
     }
 
-    // Helper extract
+    // Enrich danh sách product với ảnh, variant và category (3 query tách biệt, tránh N+1)
     private void enrichProducts(List<ProductResponse> products, List<Long> ids) {
         var images     = productImageRepository.getImagesByProductIds(ids);
         var variants   = productVariantRepository.getVariantsByProductIds(ids);
@@ -988,7 +988,7 @@ public class ProductService {
         return getProductsByIds(List.of(pid)).get(0);
     }
 
-    //Helper
+    // Helper: tạo variant mới kèm InventoryItem cho product
     private void createVariantForProduct(Product product, ProductFullUpdateRequest.VariantItem item) {
         ProductVariant variant = new ProductVariant();
         variant.setProduct(product);

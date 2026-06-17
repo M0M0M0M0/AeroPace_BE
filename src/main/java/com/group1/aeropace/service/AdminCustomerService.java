@@ -24,9 +24,6 @@ public class AdminCustomerService {
     @Autowired
     private CustomerProfileRepository customerProfileRepository;
 
-    // =========================================================
-    // API 1: Lấy danh sách tất cả khách hàng (role = USER)
-    // =========================================================
     public List<AdminCustomerResponse> getAllCustomers() {
         return userRepository.findAll()
                 .stream()
@@ -36,9 +33,6 @@ public class AdminCustomerService {
                 .toList();
     }
 
-    // =========================================================
-    // API 2: Lấy chi tiết khách hàng theo userId
-    // =========================================================
     public AdminCustomerDetailResponse getCustomerDetail(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -48,14 +42,12 @@ public class AdminCustomerService {
                 .orElse(null);
 
         return AdminCustomerDetailResponse.builder()
-                // User
                 .id(user.getId())
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .status(user.getStatus())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
-                // Profile
                 .fullName(profile != null ? profile.getFullName() : null)
                 .phoneNumber(profile != null ? profile.getPhoneNumber() : null)
                 .gender(profile != null ? profile.getGender() : null)
@@ -69,9 +61,6 @@ public class AdminCustomerService {
                 .build();
     }
 
-    // =========================================================
-    // API 3: Khoá / Mở khoá tài khoản (toggle status)
-    // =========================================================
     public AdminCustomerResponse toggleLockCustomer(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -84,21 +73,16 @@ public class AdminCustomerService {
         return mapToResponse(user);
     }
 
-    // =========================================================
-    // API 4: Cập nhật thông tin khách hàng (email + profile)
-    // =========================================================
     public AdminCustomerResponse updateCustomer(Long userId, AdminCustomerUpdateRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        // Cập nhật email trên bảng User
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             user.setEmail(request.getEmail());
             user.setUpdatedAt(LocalDateTime.now());
             userRepository.save(user);
         }
 
-        // Cập nhật CustomerProfile
         CustomerProfile profile = customerProfileRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.CUSTOMER_PROFILE_NOT_FOUND));
 
@@ -123,9 +107,6 @@ public class AdminCustomerService {
         return mapToResponse(user);
     }
 
-    // =========================================================
-    // Helper: map User + CustomerProfile → AdminCustomerResponse
-    // =========================================================
     private AdminCustomerResponse mapToResponse(User user) {
         CustomerProfile profile = customerProfileRepository
                 .findByUser_Id(user.getId())

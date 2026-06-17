@@ -16,12 +16,12 @@ public class ReviewScheduler {
 
     private final ReviewRepository reviewRepository;
 
-    // 2am
+    // Chạy lúc 2 giờ sáng mỗi ngày
     @Scheduled(cron = "0 0 2 * * *")
     @Transactional
     public void expirePendingReviews() {
         LocalDateTime cutoff = LocalDateTime.now().minusDays(30);
         int count = reviewRepository.expireOldPendingReviews(cutoff);
-        log.info("[ReviewScheduler] Expired {} pending reviews older than 30 days", count);
+        log.info("[ReviewScheduler] Đã hết hạn {} review PENDING cũ hơn 30 ngày", count);
     }
 }

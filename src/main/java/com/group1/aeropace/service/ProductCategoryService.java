@@ -1,4 +1,4 @@
-package com.group1.aeropace.service;
+﻿package com.group1.aeropace.service;
 
 import com.group1.aeropace.dto.product.response.ProductCategoryResponse;
 import com.group1.aeropace.entity.Category;
@@ -29,10 +29,7 @@ public class ProductCategoryService {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    // =========================================================
-    // API 1: GET /api/v1/products/{productId}/categories
     // Lấy tất cả category của 1 product
-    // =========================================================
     @Transactional(readOnly = true)
     public List<ProductCategoryResponse> getCategoriesByProductId(Long productId) {
         List<ProductCategory> productCategories =
@@ -43,10 +40,7 @@ public class ProductCategoryService {
                 .collect(Collectors.toList());
     }
 
-    // =========================================================
-    // API 2: POST /api/v1/products/{productId}/categories/{categoryId}
     // Gán 1 category vào 1 product
-    // =========================================================
     @Transactional
     public ProductCategoryResponse assignCategoryToProduct(Long productId, Long categoryId) {
         Product product = productRepository.findById(productId)
@@ -70,10 +64,7 @@ public class ProductCategoryService {
         return mapToResponse(saved);
     }
 
-    // =========================================================
-    // API 3: DELETE /api/v1/products/{productId}/categories/{categoryId}
     // Bỏ 1 category khỏi 1 product
-    // =========================================================
     @Transactional
     public void removeCategoryFromProduct(Long productId, Long categoryId) {
         ProductCategory productCategory = productCategoryRepository

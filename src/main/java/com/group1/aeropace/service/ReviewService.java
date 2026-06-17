@@ -35,13 +35,12 @@ public class ReviewService {
     private final CustomerProfileRepository customerProfileRepository;
     private final OrderRepository orderRepository;
 
-
-    // ----------------------------------------------------------------
-    // Gọi khi order chuyển sang COMPLETED — tạo review PENDING
-    // ----------------------------------------------------------------
+    /**
+     * Tạo slot review PENDING khi order chuyển sang COMPLETED.
+     * Bỏ qua nếu đã tồn tại để tránh tạo trùng khi event được phát lại.
+     */
     @Transactional
     public void createPendingReview(Order order, Product product, ProductVariant variant, User user) {
-        // Tránh tạo trùng nếu gọi lại
         if (reviewRepository.existsByOrderIdAndProductId(order.getId(), product.getId())) return;
 
         Review review = Review.builder()
@@ -55,9 +54,6 @@ public class ReviewService {
         reviewRepository.save(review);
     }
 
-    // ----------------------------------------------------------------
-    // User submit review từ popup
-    // ----------------------------------------------------------------
     @Transactional
     public ReviewResponse submitReview(String orderCode, Long productId,
                                        ReviewSubmitRequest request, UserDetails userDetails) {
@@ -68,7 +64,7 @@ public class ReviewService {
                 .orElseThrow(() -> new AppException(ErrorCode.REVIEW_PENDING_NOT_FOUND));
 
         if (!review.getUser().getId().equals(userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(()-> new AppException(ErrorCode.USER_NOT_FOUND))
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND))
                 .getId())) {
             throw new AppException(ErrorCode.ORDER_ACCESS_DENIED);
         }
@@ -86,9 +82,10 @@ public class ReviewService {
         return toResponse(review);
     }
 
-    // ----------------------------------------------------------------
-    // User edit review (bản cũ → EDITED, insert bản mới)
-    // ----------------------------------------------------------------
+    /**
+     * Chỉnh sửa review: đánh dấu bản cũ là EDITED rồi insert bản mới ACTIVE.
+     * Deadline chỉnh sửa tính từ ngày tạo review gốc (parent = null), không phải từ lần edit gần nhất.
+     */
     @Transactional
     public ReviewResponse editReview(Long reviewId, ReviewEditRequest request, Long currentUserId) {
         Review original = reviewRepository.findById(reviewId)
@@ -101,7 +98,6 @@ public class ReviewService {
             throw new AppException(ErrorCode.REVIEW_NOT_EDITABLE);
         }
 
-        // Lấy bản gốc (parentId = null) để tính deadline 30 ngày
         Review root = getRootReview(original);
         long daysSinceCreated = ChronoUnit.DAYS.between(root.getCreatedAt(), LocalDateTime.now());
         if (daysSinceCreated > EDIT_LIMIT_DAYS) {
@@ -110,12 +106,10 @@ public class ReviewService {
 
         validateRatingStep(request.getRating());
 
-        // Đánh dấu bản cũ là EDITED — dùng saveAndFlush để ép Hibernate flush UPDATE
-        // trước khi INSERT row mới, tránh vi phạm unique constraint trên generated column
+        // saveAndFlush ép Hibernate flush UPDATE trước INSERT để tránh vi phạm unique constraint trên generated column
         original.setStatus(ReviewStatus.EDITED);
         reviewRepository.saveAndFlush(original);
 
-        // Insert bản mới ACTIVE
         Review newVersion = Review.builder()
                 .user(original.getUser())
                 .product(original.getProduct())
@@ -134,9 +128,6 @@ public class ReviewService {
         return toResponse(newVersion);
     }
 
-    // ----------------------------------------------------------------
-    // User xoá review
-    // ----------------------------------------------------------------
     @Transactional
     public void deleteReview(Long reviewId, Long currentUserId) {
         Review review = reviewRepository.findById(reviewId)
@@ -157,9 +148,6 @@ public class ReviewService {
         }
     }
 
-    // ----------------------------------------------------------------
-    // Admin xoá review (kèm lý do)
-    // ----------------------------------------------------------------
     @Transactional
     public void adminDeleteReview(Long reviewId, AdminDeleteReviewRequest request) {
         Review review = reviewRepository.findById(reviewId)
@@ -176,17 +164,14 @@ public class ReviewService {
         }
     }
 
-    // ----------------------------------------------------------------
-    // Public: danh sách review của sản phẩm
-    // ----------------------------------------------------------------
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getProductReviews(Long productId, BigDecimal filterRating,
                                                    int page, int size, String sortBy) {
         Sort sort = switch (sortBy) {
-            case "oldest"    -> Sort.by("createdAt").ascending();
-            case "highest"   -> Sort.by("rating").descending();
-            case "lowest"    -> Sort.by("rating").ascending();
-            default          -> Sort.by("createdAt").descending(); // newest
+            case "oldest"  -> Sort.by("createdAt").ascending();
+            case "highest" -> Sort.by("rating").descending();
+            case "lowest"  -> Sort.by("rating").ascending();
+            default        -> Sort.by("createdAt").descending();
         };
 
         Pageable pageable = PageRequest.of(page, size, sort);
@@ -195,15 +180,11 @@ public class ReviewService {
         return reviews.map(r -> toResponse(r, profileMap));
     }
 
-    // ----------------------------------------------------------------
-    // Public: rating summary của sản phẩm
-    // ----------------------------------------------------------------
     @Transactional(readOnly = true)
     public RatingSummaryResponse getRatingSummary(Long productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        // Distribution từ DB
         Map<BigDecimal, Long> distribution = new HashMap<>();
         reviewRepository.countByRatingForProduct(productId)
                 .forEach(row -> distribution.put((BigDecimal) row[0], (Long) row[1]));
@@ -215,9 +196,6 @@ public class ReviewService {
         return response;
     }
 
-    // ----------------------------------------------------------------
-    // User: lấy tất cả review ACTIVE của mình cho một đơn hàng
-    // ----------------------------------------------------------------
     @Transactional(readOnly = true)
     public List<ReviewResponse> getMyReviewsByOrder(String orderCode, UserDetails userDetails) {
         Order order = orderRepository.findByOrderCode(orderCode)
@@ -232,9 +210,6 @@ public class ReviewService {
         return reviews.stream().map(r -> toResponse(r, profileMap)).toList();
     }
 
-    // ----------------------------------------------------------------
-    // Admin: list tất cả review
-    // ----------------------------------------------------------------
     @Transactional(readOnly = true)
     public Page<ReviewResponse> adminListReviews(Long productId, ReviewStatus status,
                                                   BigDecimal rating, int page, int size) {
@@ -243,10 +218,6 @@ public class ReviewService {
         Map<Long, CustomerProfile> profileMap = batchLoadProfiles(reviews.getContent());
         return reviews.map(r -> toResponse(r, profileMap));
     }
-
-    // ----------------------------------------------------------------
-    // Helpers
-    // ----------------------------------------------------------------
 
     private void updateProductRatingSummary(Long productId) {
         List<Object[]> results = reviewRepository.getCountAndAverage(productId);
@@ -271,7 +242,6 @@ public class ReviewService {
             productRepository.save(product);
         });
     }
-
 
     private Review getRootReview(Review review) {
         Review current = review;
@@ -323,6 +293,7 @@ public class ReviewService {
         return customerProfileRepository.findByUser_IdIn(userIds)
                 .stream().collect(java.util.stream.Collectors.toMap(cp -> cp.getUser().getId(), cp -> cp));
     }
+
     private String buildVariantName(ProductVariant variant) {
         return java.util.stream.Stream.of(
                         variant.getOption1Value(),
@@ -332,5 +303,4 @@ public class ReviewService {
                 .filter(v -> v != null && !v.isBlank())
                 .collect(java.util.stream.Collectors.joining(" / "));
     }
-
 }

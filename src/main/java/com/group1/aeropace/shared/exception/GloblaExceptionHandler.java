@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GloblaExceptionHandler {
 
-    // Bắc lỗi xử lý riêng api:
+    // Bắt lỗi xử lý riêng cho AppException:
     @ExceptionHandler(AppException.class)
     public ResponseEntity<ApiError> handleException(AppException ex){
         ErrorCode errorCode = ex.getErrorCode();
@@ -21,7 +21,7 @@ public class GloblaExceptionHandler {
     // Bắt lỗi chung của hệ thống (nếu có):
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleException(Exception ex) {
-        log.error("Unhandled exception: ", ex);
+        log.error("Exception chưa được xử lý: ", ex);
         ApiError error = new ApiError(
                 ErrorCode.INTERNAL_ERROR.getCode(),
                 ErrorCode.INTERNAL_ERROR.getMessage()

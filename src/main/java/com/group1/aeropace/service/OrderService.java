@@ -83,7 +83,7 @@ public class OrderService {
      */
     @Transactional
     public Order checkout(CheckoutRequest request) {
-        //auto cancel pending order
+        // Tự động hủy đơn PENDING trước đó trước khi bắt đầu luồng thanh toán mới
         orderRepository.findByUserId(request.getUserId())
                 .stream()
                 .filter(order -> OrderStatus.PENDING.equals(order.getStatus())
@@ -95,7 +95,7 @@ public class OrderService {
                     order.setCancelReason("Người dùng khởi tạo thanh toán mới");
                     orderRepository.save(order);
                 });
-        //validate data
+        // Validate dữ liệu đầu vào
         if (request.getUserId() == null ||
                 request.getShippingAddress() == null || request.getShippingAddress().isBlank() ||
                 request.getPhoneNumber() == null || request.getPhoneNumber().isBlank()) {
@@ -151,7 +151,7 @@ public class OrderService {
         for (CartItem cartItem : cartItems) {
             ProductVariant variant = cartItem.getProductVariant();
 
-            // Refetch de dam bao variant khong bi xoa sau khi dang o trong cart
+            // Refetch để đảm bảo variant chưa bị xóa sau khi thêm vào cart
             if (variant == null) {
                 throw new AppException(ErrorCode.VARIANT_NOT_FOUND);
             }
@@ -214,7 +214,7 @@ public class OrderService {
         return order;
     }
     /**
-     * lay list pending order
+     * Lấy danh sách đơn PENDING của user (chỉ trả về đơn PayPal đang chờ thanh toán).
      */
     public List<PendingOrderResponse> getUserPendingOrder(Long id){
         User user = userRepository.findById(id)
@@ -232,7 +232,8 @@ public class OrderService {
                 .toList();
     }
     /**
-     * update trang thai payment cua order khi thanh toan thanh cong
+     * Cập nhật trạng thái thanh toán của đơn hàng sau khi thanh toán thành công.
+     * Xóa cart của user và publish OrderConfirmedEvent để gửi email xác nhận bất đồng bộ.
      */
     @Transactional
     public void updatePayment(Long orderId, UpdatePaymentRequest request) {
@@ -414,7 +415,7 @@ public class OrderService {
             order.setPaymentStatus(PaymentStatus.REFUND_PENDING) ;
         }
 
-        // Hoàn stock
+        // Hoàn stock về các variant trong đơn hàng
         List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
         for (OrderItem item : items) {
             inventoryService.restoreStock(item.getProductVariant().getId(), item.getQuantity(), order.getId());
@@ -425,8 +426,8 @@ public class OrderService {
     }
 
     /**
-     * Map Order sang list response, load thêm OrderItem trong cùng call.
-     * Chú ý: mỗi lần gọi mapper này trigger một query riêng lấy items — cân nhắc nếu list lớn.
+     * Map Order sang OrderListResponse, load thêm OrderItem trong cùng l���n gọi.
+     * Lưu ý: mỗi lần gọi mapper này trigger một query riêng để lấy items — cân nhắc nếu danh sách lớn.
      */
     private OrderListResponse mapToOrderListResponse(Order order) {
         OrderListResponse response = new OrderListResponse();
@@ -541,7 +542,7 @@ public class OrderService {
         return String.join(" / ", parts);
     }
 
-//    lay order detail cho admin
+    // Lấy chi tiết đơn hàng cho admin (bao gồm đầy đủ thông tin thanh toán và refund)
     public OrderDetailResponse getOrderDetail(String orderCode){
         OrderDetailResponse response = new OrderDetailResponse();
         Order order = orderRepository.findByOrderCode(orderCode)
@@ -590,8 +591,7 @@ public class OrderService {
     }
 
     /**
-     *
-     * random gen order code
+     * Sinh mã đơn hàng ngẫu nhiên theo định dạng ORD-YYYYMMDD-XXXXX.
      */
     private String generateOrderCode() {
         String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
@@ -599,7 +599,7 @@ public class OrderService {
         return "ORD-" + date + "-" + random;
     }
     /**
-     * user confirm nhan hang
+     * User xác nhận đã nhận hàng — chuyển trạng thái DELIVERED → COMPLETED và tạo slot review PENDING.
      */
     @Transactional
     public void confirmDelivered(String orderCode, Authentication authentication) {
@@ -622,7 +622,7 @@ public class OrderService {
         order.setUpdatedAt(LocalDateTime.now());
         orderRepository.save(order);
 
-        //tao pending review
+        // Tạo một slot review PENDING cho mỗi product unique trong đơn hàng
         List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
 
         items.stream()

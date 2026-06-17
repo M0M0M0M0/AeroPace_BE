@@ -41,7 +41,7 @@ public class StripeService {
     public String getChargeId(String paymentIntentId) throws StripeException {
         Stripe.apiKey = stripeSecretKey;
         PaymentIntent intent = PaymentIntent.retrieve(paymentIntentId);
-        return intent.getLatestCharge(); // ch_xxx
+        return intent.getLatestCharge(); // trả về charge ID dạng ch_xxx
     }
 
 

@@ -1,4 +1,4 @@
-package com.group1.aeropace.service;
+﻿package com.group1.aeropace.service;
 
 import com.group1.aeropace.dto.user.request.UserRequest;
 import com.group1.aeropace.dto.user.response.UserResponse;
@@ -27,9 +27,6 @@ public class UserService {
     @Autowired
     private RoleRepository roleRepository;
 
-    // =========================================================
-    // API 1: Tạo user
-    // =========================================================
     public UserResponse createUser(UserRequest request) {
 
         userRepository.findByUsername(request.getUsername())
@@ -50,9 +47,7 @@ public class UserService {
 
         User saved = userRepository.save(user);
 
-        // =========================================
-        // AUTO CREATE CUSTOMER PROFILE
-        // =========================================
+        // Tự động tạo CustomerProfile trống cho role USER
         if (saved.getRole() != null &&
                 saved.getRole().getName().equalsIgnoreCase("USER")) {
             CustomerProfile profile = new CustomerProfile();
@@ -74,9 +69,6 @@ public class UserService {
         return mapToResponse(saved);
     }
 
-    // =========================================================
-    // API 2: Lấy tất cả user
-    // =========================================================
     public List<UserResponse> getAllUsers() {
         return userRepository.findAll()
                 .stream()
@@ -84,9 +76,6 @@ public class UserService {
                 .toList();
     }
 
-    // =========================================================
-    // API 3: Lấy user theo id
-    // =========================================================
     public UserResponse getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -94,9 +83,6 @@ public class UserService {
         return mapToResponse(user);
     }
 
-    // =========================================================
-    // API 4: Update user
-    // =========================================================
     public UserResponse updateUser(Long id, UserRequest request) {
 
         User user = userRepository.findById(id)

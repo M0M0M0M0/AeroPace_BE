@@ -1,4 +1,4 @@
-package com.group1.aeropace.controller;
+﻿package com.group1.aeropace.controller;
 
 import com.group1.aeropace.dto.category.request.CategoryRequest;
 import com.group1.aeropace.dto.category.reponse.CategoryResponse;
@@ -18,42 +18,27 @@ public class CategoryController {
     @Autowired
     private CategoryService categoryService;
 
-    // =========================================================
-    // API 1: GET /api/v1/categories
-    // =========================================================
     @GetMapping
     public List<CategoryResponse> getAllCategories() {
         return categoryService.getAllCategories();
     }
 
-    // =========================================================
-    // API 2: GET /api/v1/categories/{id}
-    // =========================================================
     @GetMapping("/{id}")
     public CategoryResponse getCategoryById(@PathVariable Long id) {
         return categoryService.getCategoryById(id);
     }
 
-    // =========================================================
-    // API 3: POST /api/v1/categories
-    // =========================================================
     @PostMapping
     public CategoryResponse createCategory(@Valid @RequestBody CategoryRequest request) {
         return categoryService.createCategory(request);
     }
 
-    // =========================================================
-    // API 4: PUT /api/v1/categories/{id}
-    // =========================================================
     @PutMapping("/{id}")
     public CategoryResponse updateCategory(@PathVariable Long id,
                                            @Valid @RequestBody CategoryRequest request) {
         return categoryService.updateCategory(id, request);
     }
 
-    // =========================================================
-    // API 5: DELETE /api/v1/categories/{id}
-    // =========================================================
     @DeleteMapping("/{id}")
     public String deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);

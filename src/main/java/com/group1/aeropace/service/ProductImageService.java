@@ -1,4 +1,4 @@
-package com.group1.aeropace.service;
+﻿package com.group1.aeropace.service;
 
 import com.group1.aeropace.dto.product.request.ProductImageRequest;
 import com.group1.aeropace.dto.product.response.ProductImageResponse;
@@ -25,11 +25,8 @@ public class ProductImageService {
     @Autowired
     private ProductRepository productRepository;
 
-    // =========================================================
-    // API 1: GET /api/v1/products/{productId}/images
     // Mục đích:
     // - Lấy toàn bộ ảnh của 1 sản phẩm theo đúng thứ tự position
-    // =========================================================
     @Transactional(readOnly = true)
     public List<ProductImageResponse> getImagesByProductId(Long productId) {
         List<ProductImage> images = productImageRepository.findByProductIdOrderByPositionAsc(productId);
@@ -39,11 +36,8 @@ public class ProductImageService {
                 .collect(Collectors.toList());
     }
 
-    // =========================================================
-    // API 2: GET /api/v1/products/images/{id}
     // Mục đích:
     // - Lấy chi tiết 1 ảnh theo id
-    // =========================================================
     @Transactional(readOnly = true)
     public ProductImageResponse getImageById(Long id) {
         ProductImage image = productImageRepository.findById(id)
@@ -52,11 +46,8 @@ public class ProductImageService {
         return mapToProductImageResponse(image);
     }
 
-    // =========================================================
-    // API 3: POST /api/v1/products/images
     // Mục đích:
     // - Thêm mới 1 ảnh cho product
-    // =========================================================
     @Transactional
     public ProductImageResponse createImage(ProductImageRequest request) {
         Product product = productRepository.findById(request.getProductId())
@@ -74,11 +65,8 @@ public class ProductImageService {
         return mapToProductImageResponse(savedImage);
     }
 
-    // =========================================================
-    // API 4: PUT /api/v1/products/images/{id}
     // Mục đích:
     // - Cập nhật ảnh theo id
-    // =========================================================
     @Transactional
     public ProductImageResponse updateImage(Long id, ProductImageRequest request) {
         ProductImage image = productImageRepository.findById(id)
@@ -97,11 +85,8 @@ public class ProductImageService {
         return mapToProductImageResponse(updatedImage);
     }
 
-    // =========================================================
-    // API 5: DELETE /api/v1/products/images/{id}
     // Mục đích:
     // - Xóa ảnh theo id
-    // =========================================================
     @Transactional
     public void deleteImage(Long id) {
         ProductImage image = productImageRepository.findById(id)
@@ -110,10 +95,8 @@ public class ProductImageService {
         productImageRepository.delete(image);
     }
 
-    // =========================================================
     // MAPPER:
     // Chuyển ProductImage entity -> ProductImageResponse
-    // =========================================================
     private ProductImageResponse mapToProductImageResponse(ProductImage image) {
         return new ProductImageResponse(
                 image.getId(),

@@ -1,4 +1,4 @@
-package com.group1.aeropace.controller;
+﻿package com.group1.aeropace.controller;
 
 import com.group1.aeropace.config.CustomUserDetails;
 import com.group1.aeropace.dto.cart.request.AddToCartRequest;
@@ -19,18 +19,12 @@ public class CartController {
     @Autowired
     private CartService cartService;
 
-    // =========================================================
-    // API 1: GET CART
-    // =========================================================
     @GetMapping
     public CartResponse getCart(Authentication authentication) {
         Long userId = extractUserId(authentication);
         return cartService.getCart(userId);
     }
 
-    // =========================================================
-    // API 2: ADD TO CART
-    // =========================================================
     @PostMapping("/items")
     public CartResponse addToCart(
             @Valid @RequestBody AddToCartRequest request,
@@ -40,9 +34,6 @@ public class CartController {
         return cartService.addToCart(userId, request);
     }
 
-    // =========================================================
-    // API 3: UPDATE CART ITEM
-    // =========================================================
     @PutMapping("/items/{cartItemId}")
     public CartResponse updateCartItemQuantity(
             @PathVariable Long cartItemId,
@@ -51,17 +42,11 @@ public class CartController {
         return cartService.updateCartItemQuantity(cartItemId, request);
     }
 
-    // =========================================================
-    // API 4: REMOVE ITEM
-    // =========================================================
     @DeleteMapping("/items/{cartItemId}")
     public CartResponse removeCartItem(@PathVariable Long cartItemId) {
         return cartService.removeCartItem(cartItemId);
     }
 
-    // =========================================================
-    // API 5: CLEAR CART
-    // =========================================================
     @DeleteMapping("/clear")
     public String clearCart(Authentication authentication) {
         Long userId = extractUserId(authentication);
@@ -69,9 +54,6 @@ public class CartController {
         return "Clear cart successfully";
     }
 
-    // =========================================================
-    // API 6: MERGE CART (localStorage → DB khi login)
-    // =========================================================
     @PostMapping("/merge")
     public CartResponse mergeCart(
             @RequestBody List<AddToCartRequest> guestItems,
@@ -81,9 +63,7 @@ public class CartController {
         return cartService.mergeCart(userId, guestItems);
     }
 
-    // =========================
     // HELPER
-    // =========================
     private Long extractUserId(Authentication authentication) {
         if (authentication != null && authentication.isAuthenticated()
                 && authentication.getPrincipal() instanceof CustomUserDetails user) {

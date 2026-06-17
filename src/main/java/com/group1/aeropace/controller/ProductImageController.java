@@ -1,4 +1,4 @@
-package com.group1.aeropace.controller;
+﻿package com.group1.aeropace.controller;
 
 import com.group1.aeropace.dto.product.request.ProductImageRequest;
 import com.group1.aeropace.dto.product.response.ProductImageResponse;
@@ -18,52 +18,37 @@ public class ProductImageController {
     @Autowired
     private ProductImageService productImageService;
 
-    // =========================================================
-    // API 1: GET /api/v1/products/{productId}/images
     // Mục đích:
     // - Lấy danh sách ảnh của 1 sản phẩm
-    // =========================================================
     @GetMapping("/{productId}/images")
     public List<ProductImageResponse> getImagesByProductId(@PathVariable Long productId) {
         return productImageService.getImagesByProductId(productId);
     }
 
-    // =========================================================
-    // API 2: GET /api/v1/products/images/{id}
     // Mục đích:
     // - Lấy 1 ảnh theo id
-    // =========================================================
     @GetMapping("/images/{id}")
     public ProductImageResponse getImageById(@PathVariable Long id) {
         return productImageService.getImageById(id);
     }
 
-    // =========================================================
-    // API 3: POST /api/v1/products/images
     // Mục đích:
     // - Tạo mới ảnh cho sản phẩm
-    // =========================================================
     @PostMapping("/images")
     public ProductImageResponse createImage(@Valid @RequestBody ProductImageRequest request) {
         return productImageService.createImage(request);
     }
 
-    // =========================================================
-    // API 4: PUT /api/v1/products/images/{id}
     // Mục đích:
     // - Cập nhật ảnh
-    // =========================================================
     @PutMapping("/images/{id}")
     public ProductImageResponse updateImage(@PathVariable Long id,
                                             @Valid @RequestBody ProductImageRequest request) {
         return productImageService.updateImage(id, request);
     }
 
-    // =========================================================
-    // API 5: DELETE /api/v1/products/images/{id}
     // Mục đích:
     // - Xóa ảnh
-    // =========================================================
     @DeleteMapping("/images/{id}")
     public String deleteImage(@PathVariable Long id) {
         productImageService.deleteImage(id);

@@ -1,4 +1,4 @@
-package com.group1.aeropace.service;
+﻿package com.group1.aeropace.service;
 
 import com.group1.aeropace.dto.category.request.CategoryRequest;
 import com.group1.aeropace.dto.category.reponse.CategoryResponse;
@@ -19,10 +19,7 @@ public class CategoryService {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    // =========================================================
-    // API 1: GET /api/v1/categories
     // Lấy toàn bộ category
-    // =========================================================
     @Transactional(readOnly = true)
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findAll()
@@ -31,10 +28,7 @@ public class CategoryService {
                 .collect(Collectors.toList());
     }
 
-    // =========================================================
-    // API 2: GET /api/v1/categories/{id}
     // Lấy category theo id
-    // =========================================================
     @Transactional(readOnly = true)
     public CategoryResponse getCategoryById(Long id) {
         Category category = categoryRepository.findById(id)
@@ -43,10 +37,7 @@ public class CategoryService {
         return mapToResponse(category);
     }
 
-    // =========================================================
-    // API 3: POST /api/v1/categories
     // Tạo mới category
-    // =========================================================
     @Transactional
     public CategoryResponse createCategory(CategoryRequest request) {
 
@@ -64,10 +55,7 @@ public class CategoryService {
         return mapToResponse(saved);
     }
 
-    // =========================================================
-    // API 4: PUT /api/v1/categories/{id}
     // Cập nhật category
-    // =========================================================
     @Transactional
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {
         Category category = categoryRepository.findById(id)
@@ -88,10 +76,7 @@ public class CategoryService {
         return mapToResponse(updated);
     }
 
-    // =========================================================
-    // API 5: DELETE /api/v1/categories/{id}
     // Xóa category
-    // =========================================================
     @Transactional
     public void deleteCategory(Long id) {
         Category category = categoryRepository.findById(id)
@@ -100,9 +85,7 @@ public class CategoryService {
         categoryRepository.delete(category);
     }
 
-    // =========================================================
     // MAPPER
-    // =========================================================
     private CategoryResponse mapToResponse(Category category) {
         return new CategoryResponse(
                 category.getId(),

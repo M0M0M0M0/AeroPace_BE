@@ -41,7 +41,7 @@ public class HistoricalProductService {
 
         HistoricalProduct saved = historicalProductRepository.save(snapshot);
 
-        // Clone images
+        // Sao chép ảnh vào snapshot
         if (images != null) {
             List<HistoricalProductImage> histImages = images.stream()
                     .sorted((a, b) -> Integer.compare(a.getPosition(), b.getPosition()))
@@ -75,7 +75,7 @@ public class HistoricalProductService {
         }
 
         historicalProductRepository.save(saved);
-        log.info("Created historical snapshot for product {} at {}", product.getId(), now);
+        log.info("Đã tạo snapshot lịch sử cho product {} tại {}", product.getId(), now);
     }
 
     @Transactional(readOnly = true)

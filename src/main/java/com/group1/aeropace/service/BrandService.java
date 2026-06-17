@@ -1,4 +1,4 @@
-package com.group1.aeropace.service;
+﻿package com.group1.aeropace.service;
 
 import com.group1.aeropace.dto.brand.request.BrandRequest;
 import com.group1.aeropace.dto.brand.response.BrandResponse;
@@ -18,10 +18,7 @@ public class BrandService {
     @Autowired
     private BrandRepository brandRepository;
 
-    // =========================================================
-    // API 1: Lấy tất cả brand
     // GET /api/v1/brands
-    // =========================================================
     @Transactional(readOnly = true)
     public List<BrandResponse> getAllBrands() {
         return brandRepository.findAll().stream()
@@ -29,10 +26,7 @@ public class BrandService {
                 .toList();
     }
 
-    // =========================================================
-    // API 2: Lấy brand theo id
     // GET /api/v1/brands/{id}
-    // =========================================================
     @Transactional(readOnly = true)
     public BrandResponse getBrandById(Long id) {
         Brand brand = brandRepository.findById(id)
@@ -40,10 +34,7 @@ public class BrandService {
         return mapToResponse(brand);
     }
 
-    // =========================================================
-    // API 3: Tạo mới brand
     // POST /api/v1/brands
-    // =========================================================
     @Transactional
     public BrandResponse createBrand(BrandRequest request) {
         brandRepository.findByName(request.getName())
@@ -58,10 +49,7 @@ public class BrandService {
         return mapToResponse(saved);
     }
 
-    // =========================================================
-    // API 4: Cập nhật brand
     // PUT /api/v1/brands/{id}
-    // =========================================================
     @Transactional
     public BrandResponse updateBrand(Long id, BrandRequest request) {
         Brand brand = brandRepository.findById(id)
@@ -80,10 +68,7 @@ public class BrandService {
         return mapToResponse(updated);
     }
 
-    // =========================================================
-    // API 5: Xóa brand
     // DELETE /api/v1/brands/{id}
-    // =========================================================
     @Transactional
     public void deleteBrand(Long id) {
         Brand brand = brandRepository.findById(id)
@@ -91,9 +76,7 @@ public class BrandService {
         brandRepository.delete(brand);
     }
 
-    // =========================================================
     // MAPPER
-    // =========================================================
     private BrandResponse mapToResponse(Brand brand) {
         return new BrandResponse(brand.getId(), brand.getName());
     }
