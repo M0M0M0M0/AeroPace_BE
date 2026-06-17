@@ -1,4 +1,4 @@
-﻿package com.group1.aeropace.controller;
+package com.group1.aeropace.controller;
 
 import com.group1.aeropace.dto.brand.request.BrandRequest;
 import com.group1.aeropace.dto.brand.response.BrandResponse;
