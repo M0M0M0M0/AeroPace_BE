@@ -57,16 +57,36 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             """)
     int expireOldPendingReviews(@Param("cutoff") LocalDateTime cutoff);
 
-    @Query("""
+    @Query(value = """
             SELECT r FROM Review r
             WHERE (:productId IS NULL OR r.product.id = :productId)
               AND (:status IS NULL OR r.status = :status)
               AND (:rating IS NULL OR r.rating = :rating)
+              AND (:userId IS NULL OR r.user.id = :userId)
+              AND (:orderCode IS NULL OR r.order.orderCode = :orderCode)
+              AND r.status NOT IN (
+                  com.group1.aeropace.enums.ReviewStatus.PENDING,
+                  com.group1.aeropace.enums.ReviewStatus.EXPIRED
+              )
+            """,
+            countQuery = """
+            SELECT count(r) FROM Review r
+            WHERE (:productId IS NULL OR r.product.id = :productId)
+              AND (:status IS NULL OR r.status = :status)
+              AND (:rating IS NULL OR r.rating = :rating)
+              AND (:userId IS NULL OR r.user.id = :userId)
+              AND (:orderCode IS NULL OR r.order.orderCode = :orderCode)
+              AND r.status NOT IN (
+                  com.group1.aeropace.enums.ReviewStatus.PENDING,
+                  com.group1.aeropace.enums.ReviewStatus.EXPIRED
+              )
             """)
     Page<Review> findAllForAdmin(
             @Param("productId") Long productId,
             @Param("status") ReviewStatus status,
             @Param("rating") BigDecimal rating,
+            @Param("userId") Long userId,
+            @Param("orderCode") String orderCode,
             Pageable pageable
     );
 

@@ -2,6 +2,7 @@ package com.group1.aeropace.controller;
 
 import com.group1.aeropace.config.CustomUserDetails;
 import com.group1.aeropace.dto.review.*;
+import com.group1.aeropace.enums.ReviewStatus;
 import com.group1.aeropace.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -77,5 +80,30 @@ public class ReviewController {
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         return ResponseEntity.ok(reviewService.getMyReviewsByOrder(orderCode, userDetails));
+    }
+
+    @GetMapping("/admin/reviews")
+    public ResponseEntity<Page<ReviewResponse>> adminListReviews(
+            @RequestParam(required = false) Long productId,
+            @RequestParam(required = false) ReviewStatus status,
+            @RequestParam(required = false) BigDecimal rating,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) String orderCode,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "newest") String sort
+    ) {
+        return ResponseEntity.ok(
+                reviewService.adminListReviews(productId, status, rating, userId, orderCode, page, size, sort)
+        );
+    }
+
+    @DeleteMapping("/admin/reviews/{id}")
+    public ResponseEntity<Void> adminDeleteReview(
+            @PathVariable Long id,
+            @Valid @RequestBody AdminDeleteReviewRequest request
+    ) {
+        reviewService.adminDeleteReview(id, request);
+        return ResponseEntity.noContent().build();
     }
 }

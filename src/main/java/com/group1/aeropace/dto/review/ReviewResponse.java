@@ -14,6 +14,8 @@ public class ReviewResponse {
     private Long productId;
     private Long userId;
     private String userName;
+    private Long orderId;
+    private String orderCode;
     private String variantName;
     private BigDecimal rating;
     private String comment;

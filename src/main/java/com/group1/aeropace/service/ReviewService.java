@@ -194,6 +194,38 @@ public class ReviewService {
         return reviews.stream().map(r -> toResponse(r, profileMap)).toList();
     }
 
+    @Transactional
+    public void adminDeleteReview(Long reviewId, AdminDeleteReviewRequest request) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
+        boolean wasActive = review.getStatus() == ReviewStatus.ACTIVE;
+        review.setStatus(ReviewStatus.DELETED);
+        review.setNote(request.getNote());
+        reviewRepository.save(review);
+        if (wasActive) {
+            updateProductRatingSummary(review.getProduct().getId());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReviewResponse> adminListReviews(Long productId, ReviewStatus status,
+                                                  BigDecimal rating, Long userId, String orderCode,
+                                                  int page, int size, String sort) {
+        Sort sortOrder = switch (sort) {
+            case "oldest"  -> Sort.by("createdAt").ascending();
+            case "highest" -> Sort.by("rating").descending();
+            case "lowest"  -> Sort.by("rating").ascending();
+            default        -> Sort.by("createdAt").descending();
+        };
+        Pageable pageable = PageRequest.of(page, size, sortOrder);
+        String trimmedOrderCode = (orderCode != null && !orderCode.isBlank()) ? orderCode.trim() : null;
+        Long normalizedUserId = (userId != null && userId > 0) ? userId : null;
+        Page<Review> reviews = reviewRepository.findAllForAdmin(
+                productId, status, rating, normalizedUserId, trimmedOrderCode, pageable);
+        Map<Long, CustomerProfile> profileMap = batchLoadProfiles(reviews.getContent());
+        return reviews.map(r -> toResponse(r, profileMap));
+    }
+
     private void updateProductRatingSummary(Long productId) {
         List<Object[]> results = reviewRepository.getCountAndAverage(productId);
 
@@ -253,6 +285,10 @@ public class ReviewService {
         dto.setUserId(review.getUser().getId());
         CustomerProfile profile = profileMap.get(review.getUser().getId());
         dto.setUserName(profile != null ? profile.getFullName() : "");
+        if (review.getOrder() != null) {
+            dto.setOrderId(review.getOrder().getId());
+            dto.setOrderCode(review.getOrder().getOrderCode());
+        }
         dto.setVariantName(buildVariantName(review.getVariant()));
         dto.setRating(review.getRating());
         dto.setComment(review.getComment());
