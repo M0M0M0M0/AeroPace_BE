@@ -15,6 +15,8 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     Optional<CartItem> findByUserIdAndProductVariantId(Long userId, Long productVariantId);
 
+    boolean existsByProductVariantId(Long productVariantId);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM CartItem c WHERE c.user.id = :userId")

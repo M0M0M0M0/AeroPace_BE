@@ -53,6 +53,8 @@ public class ProductService {
     private InventoryService inventoryService;
     @Autowired
     private HistoricalProductService historicalProductService;
+    @Autowired
+    private CartItemRepository cartItemRepository;
 
 
     /**
@@ -309,7 +311,8 @@ public class ProductService {
                 .orElseThrow(() -> new AppException(ErrorCode.VARIANT_NOT_FOUND));
 
         boolean hasOrder = orderItemRepository.existsByProductVariantId(id);
-        if (hasOrder) {
+        boolean hasCartItem = cartItemRepository.existsByProductVariantId(id);
+        if (hasOrder || hasCartItem) {
             Long productId = variant.getProduct().getId();
             variant.setIsDeleted(true);
             variant.setUpdatedAt(LocalDateTime.now());
@@ -884,14 +887,15 @@ public class ProductService {
 
         // Xóa variant không còn trong request (inline để tránh double-snapshot)
         List<Long> keepVariantIds = request.getVariants().stream()
-                .filter(v -> v.getId() != null)
+                .filter(v -> v.getId() != null && !Boolean.TRUE.equals(v.getIsDeleted()))
                 .map(ProductFullUpdateRequest.VariantItem::getId)
                 .toList();
 
         for (ProductVariant old : productVariantRepository.findByProduct_IdAndIsDeletedFalse(productId)) {
             if (!keepVariantIds.contains(old.getId())) {
                 boolean hasOrder = orderItemRepository.existsByProductVariantId(old.getId());
-                if (hasOrder) {
+                boolean hasCartItem = cartItemRepository.existsByProductVariantId(old.getId());
+                if (hasOrder || hasCartItem) {
                     old.setIsDeleted(true);
                     old.setUpdatedAt(LocalDateTime.now());
                     productVariantRepository.save(old);
@@ -905,6 +909,7 @@ public class ProductService {
         // Xử lý variant: có ID → update thẳng, không có ID → tạo mới
         boolean[] variantOptionChanged = {false};
         for (ProductFullUpdateRequest.VariantItem variantItem : request.getVariants()) {
+            if (Boolean.TRUE.equals(variantItem.getIsDeleted())) continue;
             if (variantItem.getId() != null) {
                 productVariantRepository.findById(variantItem.getId()).ifPresent(existing -> {
                     if (!Objects.equals(existing.getOption1Value(), variantItem.getOption1Value())
