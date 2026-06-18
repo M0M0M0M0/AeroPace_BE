@@ -26,14 +26,6 @@ public class BrandService {
                 .toList();
     }
 
-    // GET /api/v1/brands/{id}
-    @Transactional(readOnly = true)
-    public BrandResponse getBrandById(Long id) {
-        Brand brand = brandRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND));
-        return mapToResponse(brand);
-    }
-
     // POST /api/v1/brands
     @Transactional
     public BrandResponse createBrand(BrandRequest request) {

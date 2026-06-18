@@ -5,7 +5,6 @@ import com.group1.aeropace.dto.order.request.UpdatePaymentRequest;
 import com.group1.aeropace.dto.order.response.OrderDetailResponse;
 import com.group1.aeropace.dto.order.response.OrderItemResponse;
 import com.group1.aeropace.dto.order.response.OrderListResponse;
-import com.group1.aeropace.dto.order.response.PendingOrderResponse;
 import com.group1.aeropace.entity.*;
 import com.group1.aeropace.enums.CancelType;
 import com.group1.aeropace.enums.OrderStatus;
@@ -214,24 +213,6 @@ public class OrderService {
         return order;
     }
     /**
-     * Lấy danh sách đơn PENDING của user (chỉ trả về đơn PayPal đang chờ thanh toán).
-     */
-    public List<PendingOrderResponse> getUserPendingOrder(Long id){
-        User user = userRepository.findById(id)
-                .orElseThrow(()-> new AppException(ErrorCode.USER_NOT_FOUND));
-
-        return orderRepository.findByUserId(id)
-                .stream()
-                .filter(order -> OrderStatus.PENDING.equals(order.getStatus())
-                        && PaymentMethod.PAYPAL.equals(order.getPaymentMethod())
-                        && order.getPaymentOrderId() != null)
-                .map(order -> PendingOrderResponse.builder()
-                        .orderId(order.getId())
-                        .paymentOrderId(order.getPaymentOrderId())
-                        .build())
-                .toList();
-    }
-    /**
      * Cập nhật trạng thái thanh toán của đơn hàng sau khi thanh toán thành công.
      * Xóa cart của user và publish OrderConfirmedEvent để gửi email xác nhận bất đồng bộ.
      */
@@ -295,26 +276,6 @@ public class OrderService {
                 && order.getCancelType() != CancelType.PAYMENT_TIMEOUT)
                 .map(this::mapToOrderListResponse)
                 .toList();
-    }
-
-    /**
-     * Lấy chi tiết một đơn hàng kèm toàn bộ OrderItem.
-     * Dữ liệu item là snapshot — phản ánh tên/giá tại thời điểm đặt, không thay đổi theo product hiện tại.
-     *
-     * @throws AppException ORDER_NOT_FOUND
-     */
-    @Transactional(readOnly = true)
-    public OrderDetailResponse getOrderByCode(String orderCode) {
-        if (orderCode == null) {
-            throw new AppException(ErrorCode.INVALID_INPUT);
-        }
-
-        Order order = orderRepository.findByOrderCode(orderCode)
-                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
-
-        List<OrderItem> orderItems = orderItemRepository.findByOrderId(order.getId());
-
-        return mapToOrderDetailResponse(order, orderItems);
     }
 
     /**

@@ -148,22 +148,6 @@ public class ReviewService {
         }
     }
 
-    @Transactional
-    public void adminDeleteReview(Long reviewId, AdminDeleteReviewRequest request) {
-        Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_NOT_FOUND));
-
-        boolean wasActive = review.getStatus() == ReviewStatus.ACTIVE;
-
-        review.setStatus(ReviewStatus.DELETED);
-        review.setNote(request.getNote());
-        reviewRepository.save(review);
-
-        if (wasActive) {
-            updateProductRatingSummary(review.getProduct().getId());
-        }
-    }
-
     @Transactional(readOnly = true)
     public Page<ReviewResponse> getProductReviews(Long productId, BigDecimal filterRating,
                                                    int page, int size, String sortBy) {
@@ -208,15 +192,6 @@ public class ReviewService {
         List<Review> reviews = reviewRepository.findActiveByOrderId(order.getId());
         Map<Long, CustomerProfile> profileMap = batchLoadProfiles(reviews);
         return reviews.stream().map(r -> toResponse(r, profileMap)).toList();
-    }
-
-    @Transactional(readOnly = true)
-    public Page<ReviewResponse> adminListReviews(Long productId, ReviewStatus status,
-                                                  BigDecimal rating, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Review> reviews = reviewRepository.findAllForAdmin(productId, status, rating, pageable);
-        Map<Long, CustomerProfile> profileMap = batchLoadProfiles(reviews.getContent());
-        return reviews.map(r -> toResponse(r, profileMap));
     }
 
     private void updateProductRatingSummary(Long productId) {

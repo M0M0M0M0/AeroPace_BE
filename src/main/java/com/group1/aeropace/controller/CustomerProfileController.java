@@ -6,52 +6,21 @@ import com.group1.aeropace.service.CustomerProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/customer-profiles")
-//@CrossOrigin(origins = "*")
 public class CustomerProfileController {
 
     @Autowired
     private CustomerProfileService customerProfileService;
 
-    // POST /api/v1/customer-profiles
-    @PostMapping
-    public CustomerProfileResponse createCustomerProfile(@RequestBody CustomerProfileRequest request) {
-        return customerProfileService.createCustomerProfile(request);
-    }
-
-    // GET /api/v1/customer-profiles
-    @GetMapping
-    public List<CustomerProfileResponse> getAllCustomerProfiles() {
-        return customerProfileService.getAllCustomerProfiles();
-    }
-
-    // GET /api/v1/customer-profiles/{id}
-    @GetMapping("/{id}")
-    public CustomerProfileResponse getCustomerProfileById(@PathVariable Long id) {
-        return customerProfileService.getCustomerProfileById(id);
-    }
-
-    // GET /api/v1/customer-profiles/user/{userId}
     @GetMapping("/user/{userId}")
     public CustomerProfileResponse getByUserId(@PathVariable Long userId) {
         return customerProfileService.getByUserId(userId);
     }
 
-    // PUT /api/v1/customer-profiles/{id}
     @PutMapping("/{id}")
     public CustomerProfileResponse updateCustomerProfile(@PathVariable Long id,
                                                          @RequestBody CustomerProfileRequest request) {
         return customerProfileService.updateCustomerProfile(id, request);
     }
-
-    // DELETE /api/v1/customer-profiles/{id}
-    @DeleteMapping("/{id}")
-    public String deleteCustomerProfile(@PathVariable Long id) {
-        customerProfileService.deleteCustomerProfile(id);
-        return "Delete customer profile successfully";
-    }
-
 }

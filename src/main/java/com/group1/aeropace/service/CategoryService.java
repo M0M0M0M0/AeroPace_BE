@@ -28,15 +28,6 @@ public class CategoryService {
                 .collect(Collectors.toList());
     }
 
-    // Lấy category theo id
-    @Transactional(readOnly = true)
-    public CategoryResponse getCategoryById(Long id) {
-        Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.CATEGORY_NOT_FOUND));
-
-        return mapToResponse(category);
-    }
-
     // Tạo mới category
     @Transactional
     public CategoryResponse createCategory(CategoryRequest request) {

@@ -11,8 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/categories")
-//@CrossOrigin(origins = "*")
-
 public class CategoryController {
 
     @Autowired
@@ -21,11 +19,6 @@ public class CategoryController {
     @GetMapping
     public List<CategoryResponse> getAllCategories() {
         return categoryService.getAllCategories();
-    }
-
-    @GetMapping("/{id}")
-    public CategoryResponse getCategoryById(@PathVariable Long id) {
-        return categoryService.getCategoryById(id);
     }
 
     @PostMapping
