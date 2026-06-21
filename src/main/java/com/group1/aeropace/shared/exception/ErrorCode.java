@@ -50,6 +50,7 @@ public enum ErrorCode {
     ORDER_PRODUCT_MISMATCH("3044", "This order does not contain the requested product", HttpStatus.FORBIDDEN),
     INVALID_IMAGE_FILE("3045", "Invalid image file (only JPEG/PNG/WEBP up to 5MB allowed)", HttpStatus.BAD_REQUEST),
     IMAGE_UPLOAD_FAILED("3046", "Image upload failed, please try again", HttpStatus.INTERNAL_SERVER_ERROR),
+    VARIANT_ALREADY_EXISTS("3047", "A variant with the same options already exists", HttpStatus.CONFLICT),
 
     EMBEDDING_API_ERROR("5001", "Embedding API call failed", HttpStatus.INTERNAL_SERVER_ERROR),
 
