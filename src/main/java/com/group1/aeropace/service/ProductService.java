@@ -8,10 +8,12 @@ import com.group1.aeropace.dto.product.response.BestSellerResponse;
 import com.group1.aeropace.dto.product.response.ProductResponse;
 import com.group1.aeropace.dto.product.response.ProductVariantResponse;
 import com.group1.aeropace.entity.*;
+import com.group1.aeropace.event.ProductChangedEvent;
 import com.group1.aeropace.repository.*;
 import com.group1.aeropace.shared.exception.AppException;
 import com.group1.aeropace.shared.exception.ErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -52,6 +54,8 @@ public class ProductService {
     private HistoricalProductService historicalProductService;
     @Autowired
     private CartItemRepository cartItemRepository;
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
 
     /**
@@ -121,7 +125,11 @@ public class ProductService {
             historicalProductService.createSnapshot(savedProduct, images, variants);
         }
 
-        return getProductsByIds(List.of(savedProduct.getId())).get(0);
+        ProductResponse response = getProductsByIds(List.of(savedProduct.getId())).get(0);
+        if (savedProduct.getStatus() == Product.Status.ACTIVE) {
+            eventPublisher.publishEvent(new ProductChangedEvent(this, savedProduct.getId()));
+        }
+        return response;
     }
 
     private String generateSlug(String name) {
@@ -725,7 +733,11 @@ public class ProductService {
             historicalProductService.createSnapshot(finalProduct, images, variants);
         }
 
-        return getProductsByIds(List.of(pid)).get(0);
+        ProductResponse response = getProductsByIds(List.of(pid)).get(0);
+        if (product.getStatus() == Product.Status.ACTIVE) {
+            eventPublisher.publishEvent(new ProductChangedEvent(this, pid));
+        }
+        return response;
     }
 
     // Helper: tạo variant mới kèm InventoryItem cho product

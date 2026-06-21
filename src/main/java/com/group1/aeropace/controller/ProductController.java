@@ -1,6 +1,7 @@
 package com.group1.aeropace.controller;
 
 import com.group1.aeropace.dto.product.response.ProductResponse;
+import com.group1.aeropace.service.ProductEmbeddingService;
 import com.group1.aeropace.service.ProductService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -15,10 +16,21 @@ public class ProductController {
 
     @Autowired
     private ProductService productService;
+    @Autowired
+    private ProductEmbeddingService productEmbeddingService;
 
     @GetMapping("/detail/{id}")
     public ProductResponse getProductDetail(@PathVariable Long id) {
         return productService.getProductDetail(id);
+    }
+
+    @GetMapping("/{id}/similar")
+    public List<ProductResponse> getSimilarProducts(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "6") int limit) {
+        List<Long> ids = productEmbeddingService.findSimilarProductIds(id, limit);
+        if (ids.isEmpty()) return List.of();
+        return productService.getProductsByIds(ids);
     }
 
     @GetMapping("/by-ids")

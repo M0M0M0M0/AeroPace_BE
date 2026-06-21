@@ -292,4 +292,11 @@ AND (:reviewCountMax IS NULL OR p.reviewCount <= :reviewCountMax)
             @Param("reviewCountMax") Integer reviewCountMax,
             @Param("productIds") List<Long> productIds
     );
+
+    @Query("""
+        SELECT p.id FROM Product p
+        WHERE p.status = com.group1.aeropace.entity.Product.Status.ACTIVE
+        AND p.id NOT IN (SELECT pe.productId FROM ProductEmbedding pe)
+    """)
+    List<Long> findActiveProductIdsWithoutEmbedding();
 }

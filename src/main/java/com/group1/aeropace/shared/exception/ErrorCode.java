@@ -51,6 +51,8 @@ public enum ErrorCode {
     INVALID_IMAGE_FILE("3045", "Invalid image file (only JPEG/PNG/WEBP up to 5MB allowed)", HttpStatus.BAD_REQUEST),
     IMAGE_UPLOAD_FAILED("3046", "Image upload failed, please try again", HttpStatus.INTERNAL_SERVER_ERROR),
 
+    EMBEDDING_API_ERROR("5001", "Embedding API call failed", HttpStatus.INTERNAL_SERVER_ERROR),
+
     INTERNAL_ERROR("9999", "Internal server error", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final String code;
