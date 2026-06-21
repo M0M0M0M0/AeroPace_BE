@@ -15,13 +15,17 @@ public class JwtUtil {
     private String secret;
 
     @Value("${jwt.expiration}")
-    private long expiration;
+    private long userExpiration;
+
+    @Value("${jwt.admin.expiration}")
+    private long adminExpiration;
 
     public Key getSigningKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public String generateToken(String username,String role) {
+    public String generateToken(String username, String role) {
+        long expiration = "ADMIN".equals(role) ? adminExpiration : userExpiration;
         return Jwts.builder()
                 .setSubject(username)
                 .claim("role", role)
