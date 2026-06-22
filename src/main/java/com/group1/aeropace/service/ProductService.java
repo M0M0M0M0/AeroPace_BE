@@ -697,16 +697,24 @@ public class ProductService {
                     majorChange = true;
                 }
             }
+            productImageRepository.flush();
+
+            // Tính max position của ảnh còn lại sau khi xóa để tránh duplicate
+            int nextPosition = productImageRepository.findByProduct_Id(pid).stream()
+                    .mapToInt(ProductImage::getPosition)
+                    .max()
+                    .orElse(-1) + 1;
 
             for (ProductFullUpdateRequest.ImageItem imgItem : request.getImages()) {
                 if (imgItem.getId() == null && imgItem.getImageUrl() != null && !imgItem.getImageUrl().isBlank()) {
                     ProductImage newImage = new ProductImage();
                     newImage.setProduct(product);
                     newImage.setImageUrl(imgItem.getImageUrl());
-                    newImage.setPosition(imgItem.getPosition() != null ? imgItem.getPosition() : 1);
+                    newImage.setPosition(nextPosition++);
                     newImage.setCreatedAt(LocalDateTime.now());
                     newImage.setUpdatedAt(LocalDateTime.now());
                     productImageRepository.save(newImage);
+                    majorChange = true;
                 }
             }
         }
