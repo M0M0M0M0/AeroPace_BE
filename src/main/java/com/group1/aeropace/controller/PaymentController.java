@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.RoundingMode;
 import java.util.Map;
 
 @RestController
@@ -30,9 +31,12 @@ public class PaymentController {
     public ResponseEntity<?> createPaymentIntent(
             @RequestBody CheckoutRequest request) {
         try {
-            // Tạo PaymentIntent trên Stripe
-            StripeVerifyResult result = stripeService.createPaymentIntent(
-                    Long.parseLong(request.getGrandTotal().toString()), "vnd");
+            // Tạo PaymentIntent trên Stripe (USD, đơn vị cents — nhân 100)
+            long amountCents = request.getGrandTotal()
+                    .setScale(2, RoundingMode.HALF_UP)
+                    .movePointRight(2)
+                    .longValueExact();
+            StripeVerifyResult result = stripeService.createPaymentIntent(amountCents, "usd");
 
             //  tạo order PENDING
             request.setPaymentOrderId(result.getPaymentIntentId());

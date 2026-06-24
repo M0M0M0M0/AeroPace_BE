@@ -203,7 +203,7 @@ public class OrderService {
         orderItemRepository.saveAll(orderItems);
 
         order.setTotalPrice(total);
-        order.setVat(total.multiply(new BigDecimal("0.10")).setScale(0, RoundingMode.HALF_UP));
+        order.setVat(total.multiply(new BigDecimal("0.10")).setScale(2, RoundingMode.HALF_UP));
         order.setUpdatedAt(LocalDateTime.now());
 
         order = orderRepository.save(order);

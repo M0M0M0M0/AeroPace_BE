@@ -51,6 +51,7 @@ public enum ErrorCode {
     INVALID_IMAGE_FILE("3045", "Invalid image file (only JPEG/PNG/WEBP up to 5MB allowed)", HttpStatus.BAD_REQUEST),
     IMAGE_UPLOAD_FAILED("3046", "Image upload failed, please try again", HttpStatus.INTERNAL_SERVER_ERROR),
     VARIANT_ALREADY_EXISTS("3047", "A variant with the same options already exists", HttpStatus.CONFLICT),
+    PRODUCT_DELETE_REQUIRES_ARCHIVE("3048", "Product must be archived before it can be deleted", HttpStatus.BAD_REQUEST),
 
     EMBEDDING_API_ERROR("5001", "Embedding API call failed", HttpStatus.INTERNAL_SERVER_ERROR),
 

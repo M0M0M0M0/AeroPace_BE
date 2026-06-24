@@ -120,15 +120,15 @@ public class EmailTemplateBuilder {
                                    style="font-size:14px;border-top:1px solid #eee;">
                               <tr>
                                 <td style="color:#777;">Tạm tính</td>
-                                <td style="text-align:right;color:#333;">%s ₫</td>
+                                <td style="text-align:right;color:#333;">$%s</td>
                               </tr>
                               <tr>
                                 <td style="color:#777;">Phí vận chuyển</td>
-                                <td style="text-align:right;color:#333;">%s ₫</td>
+                                <td style="text-align:right;color:#333;">$%s</td>
                               </tr>
                               <tr>
                                 <td style="color:#777;">VAT</td>
-                                <td style="text-align:right;color:#333;">%s ₫</td>
+                                <td style="text-align:right;color:#333;">$%s</td>
                               </tr>
                               <tr style="border-top:2px solid #1a1a2e;">
                                 <td style="font-weight:bold;color:#1a1a2e;padding-top:10px;">
@@ -136,7 +136,7 @@ public class EmailTemplateBuilder {
                                 </td>
                                 <td style="text-align:right;font-weight:bold;
                                            font-size:16px;padding-top:10px;">
-                                  %s ₫
+                                  $%s
                                 </td>
                               </tr>
                               <tr>
@@ -262,7 +262,7 @@ public class EmailTemplateBuilder {
                               </tr>
                               <tr>
                                 <td style="color:#777;">Số tiền hoàn</td>
-                                <td style="color:#333;font-weight:bold;">%s ₫</td>
+                                <td style="color:#333;font-weight:bold;">$%s</td>
                               </tr>
                               <tr>
                                 <td style="color:#777;">Phương thức thanh toán</td>
@@ -327,8 +327,8 @@ public class EmailTemplateBuilder {
                       <td style="padding:10px 12px;color:#333;border-bottom:1px solid #eee;">%s</td>
                       <td style="padding:10px 12px;color:#555;border-bottom:1px solid #eee;">%s</td>
                       <td style="padding:10px 12px;text-align:center;color:#333;border-bottom:1px solid #eee;">%d</td>
-                      <td style="padding:10px 12px;text-align:right;color:#333;border-bottom:1px solid #eee;">%s ₫</td>
-                      <td style="padding:10px 12px;text-align:right;font-weight:bold;color:#1a1a2e;border-bottom:1px solid #eee;">%s ₫</td>
+                      <td style="padding:10px 12px;text-align:right;color:#333;border-bottom:1px solid #eee;">$%s</td>
+                      <td style="padding:10px 12px;text-align:right;font-weight:bold;color:#1a1a2e;border-bottom:1px solid #eee;">$%s</td>
                     </tr>
                     """.formatted(
                     bg,
@@ -362,9 +362,11 @@ public class EmailTemplateBuilder {
     }
 
     private String formatVnd(BigDecimal amount) {
-        if (amount == null) return "0";
-        return NumberFormat.getNumberInstance(new Locale("vi", "VN"))
-                .format(amount.longValue());
+        if (amount == null) return "0.00";
+        NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
+        nf.setMinimumFractionDigits(2);
+        nf.setMaximumFractionDigits(2);
+        return nf.format(amount);
     }
 
     private String translateStatus(String status) {

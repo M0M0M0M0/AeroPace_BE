@@ -616,13 +616,22 @@ public class ProductService {
                 || !Objects.equals(product.getOption2Name(), request.getOption2Name())
                 || !Objects.equals(product.getOption3Name(), request.getOption3Name());
 
+        // Bắt buộc ARCHIVED trước khi DELETED — không cho xóa trực tiếp từ ACTIVE/DRAFT.
+        // Cho phép lưu lại sản phẩm vốn đã DELETED (idempotent).
+        Product.Status newStatus = request.getStatus() != null ? request.getStatus() : product.getStatus();
+        if (newStatus == Product.Status.DELETED
+                && product.getStatus() != Product.Status.ARCHIVED
+                && product.getStatus() != Product.Status.DELETED) {
+            throw new AppException(ErrorCode.PRODUCT_DELETE_REQUIRES_ARCHIVE);
+        }
+
         product.setName(request.getName());
         product.setDescription(request.getDescription());
         product.setBrand(brand);
         product.setOption1Name(request.getOption1Name());
         product.setOption2Name(request.getOption2Name());
         product.setOption3Name(request.getOption3Name());
-        product.setStatus(request.getStatus() != null ? request.getStatus() : product.getStatus());
+        product.setStatus(newStatus);
         product.setUpdatedAt(LocalDateTime.now());
         product = productRepository.save(product);
 
