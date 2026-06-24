@@ -2,6 +2,7 @@ package com.group1.aeropace.controller;
 
 import com.group1.aeropace.dto.admin.response.LowStockResponse;
 import com.group1.aeropace.dto.admin.response.NewCustomerResponse;
+import com.group1.aeropace.dto.admin.response.TopBuyerResponse;
 import com.group1.aeropace.service.AdminDashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,5 +33,14 @@ public class AdminDashboardController {
             @RequestParam String dateTo
     ) {
         return dashboardService.getNewCustomers(dateFrom, dateTo);
+    }
+
+    @GetMapping("/top-buyers")
+    public List<TopBuyerResponse> getTopBuyers(
+            @RequestParam String dateFrom,
+            @RequestParam String dateTo,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        return dashboardService.getTopBuyers(dateFrom, dateTo, limit);
     }
 }
