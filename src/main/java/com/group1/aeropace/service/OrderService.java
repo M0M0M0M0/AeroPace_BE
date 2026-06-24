@@ -27,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -553,12 +552,33 @@ public class OrderService {
     }
 
     /**
-     * Sinh mã đơn hàng ngẫu nhiên theo định dạng ORD-YYYYMMDD-XXXXX.
+     * Sinh mã đơn hàng theo định dạng ORD-xddyyxxmmyxxxy-XXXXX.
+     * Ngày đặt hàng được nhúng vào đoạn giữa theo template (x=random, d=day, m=month, y=year):
+     *   pos  1    → x  (random)
+     *   pos  2-3  → dd (ngày)
+     *   pos  4-5  → y₀y₁ (năm chữ 1-2, e.g. "20" của 2026)
+     *   pos  6-7  → xx (random)
+     *   pos  8-9  → mm (tháng)
+     *   pos  10   → y₂ (năm chữ 3, e.g. "2" của 2026)
+     *   pos  11-13→ xxx (random)
+     *   pos  14   → y₃ (năm chữ 4, e.g. "6" của 2026)
      */
     private String generateOrderCode() {
-        String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-        String random = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
-        return "ORD-" + date + "-" + random;
+        LocalDateTime now = LocalDateTime.now();
+        String year  = String.format("%04d", now.getYear());
+        String month = String.format("%02d", now.getMonthValue());
+        String day   = String.format("%02d", now.getDayOfMonth());
+        String rnd   = RandomStringUtils.randomAlphanumeric(6).toLowerCase();
+        String middle = "" + rnd.charAt(0)
+                + day.charAt(0)   + day.charAt(1)
+                + year.charAt(0)  + year.charAt(1)
+                + rnd.charAt(1)   + rnd.charAt(2)
+                + month.charAt(0) + month.charAt(1)
+                + year.charAt(2)
+                + rnd.charAt(3)   + rnd.charAt(4) + rnd.charAt(5)
+                + year.charAt(3);
+        String suffix = RandomStringUtils.randomAlphanumeric(5).toUpperCase();
+        return "ORD-" + middle + "-" + suffix;
     }
     /**
      * User xác nhận đã nhận hàng — chuyển trạng thái DELIVERED → COMPLETED và tạo slot review PENDING.
