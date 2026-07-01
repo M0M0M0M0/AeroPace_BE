@@ -650,6 +650,10 @@ public class ProductService {
                 }
             }
         }
+        // Flush before inserting new variants — Hibernate defaults to insert-before-update,
+        // so without this flush the old active_variant=1 row still exists when the INSERT runs,
+        // causing a duplicate-key violation on uq_variant_active.
+        productVariantRepository.flush();
 
         boolean[] variantOptionChanged = {false};
         for (ProductFullUpdateRequest.VariantItem variantItem : request.getVariants()) {

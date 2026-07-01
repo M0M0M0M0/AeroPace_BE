@@ -26,7 +26,6 @@ public class StockMovement {
     @Column(name = "movement_type", nullable = false, length = 20)
     private MovementType movementType;
 
-    // Dương = thêm vào, âm = trừ đi
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 

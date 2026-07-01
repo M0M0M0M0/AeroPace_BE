@@ -40,7 +40,7 @@ CREATE TABLE historical_product_variants (
     INDEX idx_hpv_hp (historical_product_id)
 );
 
--- 4. inventory_items (1:1 với product_variants)
+-- 4. inventory_items
 CREATE TABLE inventory_items (
     id                  BIGINT AUTO_INCREMENT PRIMARY KEY,
     product_variant_id  BIGINT NOT NULL UNIQUE,
@@ -61,7 +61,7 @@ CREATE TABLE stock_movements (
     INDEX idx_sm_inventory (inventory_item_id)
 );
 
--- 6. Copy stock cũ sang inventory_items trước khi drop column
+
 INSERT INTO inventory_items (product_variant_id, sku, cached_stock, created_at)
 SELECT pv.id, pv.sku, COALESCE(pv.stock, 0), NOW()
 FROM product_variants pv
@@ -69,11 +69,10 @@ WHERE NOT EXISTS (
     SELECT 1 FROM inventory_items ii WHERE ii.product_variant_id = pv.id
 );
 
--- Tạo stock_movements audit trail cho initial stock
 INSERT INTO stock_movements (inventory_item_id, movement_type, quantity, note, created_at)
 SELECT ii.id, 'RESTOCK', ii.cached_stock, 'Initial stock migration', NOW()
 FROM inventory_items ii
 WHERE ii.cached_stock > 0;
 
--- 7. Bỏ cột stock khỏi product_variants
+-- 6. Remove stockcolumn
 ALTER TABLE product_variants DROP COLUMN stock;
