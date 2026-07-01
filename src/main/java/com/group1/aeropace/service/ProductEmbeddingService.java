@@ -104,7 +104,6 @@ public class ProductEmbeddingService {
             pe.setEmbedding(embeddingJson);
             productEmbeddingRepository.save(pe);
 
-            // Cập nhật cache ngay lập tức
             embeddingCache.put(productId, toFloatArray(vector));
         } catch (JsonProcessingException e) {
             log.error("[ProductEmbeddingService] Failed to serialize embedding for product id={}", productId, e);

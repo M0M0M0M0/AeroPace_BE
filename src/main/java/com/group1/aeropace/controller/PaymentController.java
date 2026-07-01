@@ -38,7 +38,6 @@ public class PaymentController {
                     .longValueExact();
             StripeVerifyResult result = stripeService.createPaymentIntent(amountCents, "usd");
 
-            //  tạo order PENDING
             request.setPaymentOrderId(result.getPaymentIntentId());
             request.setPaymentMethod("stripe");
             Order order = orderService.checkout(request);

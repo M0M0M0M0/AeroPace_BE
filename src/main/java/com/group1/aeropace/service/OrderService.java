@@ -93,7 +93,6 @@ public class OrderService {
                     order.setCancelReason("Người dùng khởi tạo thanh toán mới");
                     orderRepository.save(order);
                 });
-        // Validate dữ liệu đầu vào
         if (request.getUserId() == null ||
                 request.getShippingAddress() == null || request.getShippingAddress().isBlank() ||
                 request.getPhoneNumber() == null || request.getPhoneNumber().isBlank()) {
@@ -375,7 +374,6 @@ public class OrderService {
             order.setPaymentStatus(PaymentStatus.REFUND_PENDING) ;
         }
 
-        // Hoàn stock về các variant trong đơn hàng
         List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
         for (OrderItem item : items) {
             inventoryService.restoreStock(item.getProductVariant().getId(), item.getQuantity(), order.getId());
@@ -604,7 +602,6 @@ public class OrderService {
         order.setUpdatedAt(LocalDateTime.now());
         orderRepository.save(order);
 
-        // Tạo một slot review PENDING cho mỗi product unique trong đơn hàng
         List<OrderItem> items = orderItemRepository.findByOrderId(order.getId());
 
         items.stream()

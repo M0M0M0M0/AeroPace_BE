@@ -47,7 +47,6 @@ public class UserService {
 
         User saved = userRepository.save(user);
 
-        // Tự động tạo CustomerProfile trống cho role USER
         if (saved.getRole() != null &&
                 saved.getRole().getName().equalsIgnoreCase("USER")) {
             CustomerProfile profile = new CustomerProfile();

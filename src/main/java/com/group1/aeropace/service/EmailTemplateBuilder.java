@@ -189,21 +189,16 @@ public class EmailTemplateBuilder {
                 </body>
                 </html>
                 """.formatted(
-                // greeting
                 order.getReceiverName(),
-                // order info
                 order.getOrderCode(),
                 order.getCreatedAt().format(DATE_FMT),
                 translateStatus(order.getStatus().name()),
-                // product rows
                 buildItemRows(items),
-                // payment summary
                 formatVnd(order.getTotalPrice()),
                 formatVnd(order.getShippingFee()),
                 formatVnd(order.getVat()),
                 formatVnd(calculateGrandTotal(order)),
                 order.getPaymentMethod().name(),
-                // shipping
                 order.getReceiverName(),
                 order.getPhoneNumber(),
                 buildFullAddress(order)

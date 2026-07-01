@@ -19,7 +19,6 @@ public class CategoryService {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    // Lấy toàn bộ category
     @Transactional(readOnly = true)
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findAll()
@@ -28,7 +27,6 @@ public class CategoryService {
                 .collect(Collectors.toList());
     }
 
-    // Tạo mới category
     @Transactional
     public CategoryResponse createCategory(CategoryRequest request) {
 
@@ -46,7 +44,6 @@ public class CategoryService {
         return mapToResponse(saved);
     }
 
-    // Cập nhật category
     @Transactional
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {
         Category category = categoryRepository.findById(id)
@@ -67,7 +64,6 @@ public class CategoryService {
         return mapToResponse(updated);
     }
 
-    // Xóa category
     @Transactional
     public void deleteCategory(Long id) {
         Category category = categoryRepository.findById(id)
@@ -76,7 +72,6 @@ public class CategoryService {
         categoryRepository.delete(category);
     }
 
-    // MAPPER
     private CategoryResponse mapToResponse(Category category) {
         return new CategoryResponse(
                 category.getId(),

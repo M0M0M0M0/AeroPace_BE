@@ -38,12 +38,10 @@ public class OrderEventListener {
 
         if (freshOrder == null) return;
 
-        // Fetch user đầy đủ thông tin
         userRepository.findById(freshOrder.getUser().getId()).ifPresentOrElse(
                 fullUser -> {
                     freshOrder.setUser(fullUser);
 
-                    // Fetch danh sách OrderItem
                     List<OrderItem> items = orderItemRepository.findByOrderId(freshOrder.getId());
                     freshOrder.setOrderItems(items);
 

@@ -18,7 +18,6 @@ public class BrandService {
     @Autowired
     private BrandRepository brandRepository;
 
-    // GET /api/v1/brands
     @Transactional(readOnly = true)
     public List<BrandResponse> getAllBrands() {
         return brandRepository.findAll().stream()
@@ -26,7 +25,6 @@ public class BrandService {
                 .toList();
     }
 
-    // POST /api/v1/brands
     @Transactional
     public BrandResponse createBrand(BrandRequest request) {
         brandRepository.findByName(request.getName())
@@ -41,7 +39,6 @@ public class BrandService {
         return mapToResponse(saved);
     }
 
-    // PUT /api/v1/brands/{id}
     @Transactional
     public BrandResponse updateBrand(Long id, BrandRequest request) {
         Brand brand = brandRepository.findById(id)
@@ -60,7 +57,6 @@ public class BrandService {
         return mapToResponse(updated);
     }
 
-    // DELETE /api/v1/brands/{id}
     @Transactional
     public void deleteBrand(Long id) {
         Brand brand = brandRepository.findById(id)
@@ -68,7 +64,6 @@ public class BrandService {
         brandRepository.delete(brand);
     }
 
-    // MAPPER
     private BrandResponse mapToResponse(Brand brand) {
         return new BrandResponse(brand.getId(), brand.getName());
     }

@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-@Data   // @Data là lombok tạo sẵn Getter, Setter, toString .... chứ không tạo sẵn Constructor nhé
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProductVariantResponse {

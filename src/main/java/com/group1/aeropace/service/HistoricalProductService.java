@@ -24,10 +24,8 @@ public class HistoricalProductService {
     public void createSnapshot(Product product, List<ProductImage> images, List<ProductVariant> variants) {
         LocalDateTime now = LocalDateTime.now();
 
-        // Đóng snapshot đang hiệu lực
         historicalProductRepository.closeCurrentSnapshot(product.getId(), now);
 
-        // Tạo snapshot mới
         HistoricalProduct snapshot = new HistoricalProduct();
         snapshot.setProductId(product.getId());
         snapshot.setName(product.getName());
@@ -41,7 +39,6 @@ public class HistoricalProductService {
 
         HistoricalProduct saved = historicalProductRepository.save(snapshot);
 
-        // Sao chép ảnh vào snapshot
         if (images != null) {
             List<HistoricalProductImage> histImages = images.stream()
                     .sorted((a, b) -> Integer.compare(a.getPosition(), b.getPosition()))
@@ -55,7 +52,6 @@ public class HistoricalProductService {
             saved.setImages(histImages);
         }
 
-        // Clone variants (chỉ variant chưa bị xóa)
         if (variants != null) {
             List<HistoricalProductVariant> histVariants = variants.stream()
                     .filter(v -> !Boolean.TRUE.equals(v.getIsDeleted()))

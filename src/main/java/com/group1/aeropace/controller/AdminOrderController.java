@@ -37,7 +37,7 @@ public class AdminOrderController {
                 orderCode, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo, userId
         );
     }
-    //update order status
+
     @PutMapping("/{orderCode}/status")
     public void updateOrderStatus(
             @PathVariable String orderCode,
@@ -47,12 +47,12 @@ public class AdminOrderController {
         String reason = body != null ? body.get("reason") : null;
         orderService.updateOrderStatus(orderCode, status, reason);
     }
-    //get order detail
+
     @GetMapping("/details/{orderCode}")
     public OrderDetailResponse getOrderDetail(@PathVariable String orderCode){
         return orderService.getOrderDetail(orderCode);
     }
-    //refund
+
     @PostMapping("/{orderCode}/refund")
     public RefundResponse refund(@PathVariable String orderCode, @RequestBody RefundRequest request){
         return refundService.refund(orderCode, request);

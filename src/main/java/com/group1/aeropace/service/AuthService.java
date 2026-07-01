@@ -59,7 +59,6 @@ public class AuthService {
     }
     public String register(RegisterRequest request) {
 
-        // Kiểm tra username/email đã tồn tại chưa
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
@@ -77,14 +76,12 @@ public class AuthService {
         // Status mặc định khi đăng ký là ACTIVE — admin phải tự lock nếu cần
         user.setStatus("ACTIVE");
 
-        // Mã hóa password trước khi lưu
         user.setPassword(passwordEncoder.encode(request.getPassword()));
 
         user.setRole(userRole);
         user.setCreatedAt(LocalDateTime.now());
         user.setUpdatedAt(LocalDateTime.now());
 
-        // Tạo CustomerProfile trống kèm theo user mới
         User savedUser = userRepository.save(user);
         CustomerProfile profile = new CustomerProfile();
         profile.setUser(savedUser);
