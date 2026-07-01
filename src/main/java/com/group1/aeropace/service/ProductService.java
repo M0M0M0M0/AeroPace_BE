@@ -602,8 +602,10 @@ public class ProductService {
         Brand brand = brandRepository.findById(request.getBrandId())
                 .orElseThrow(() -> new AppException(ErrorCode.BRAND_NOT_FOUND));
 
-        boolean majorChange = !Objects.equals(product.getName(), request.getName())
-                || !Objects.equals(product.getDescription(), request.getDescription())
+        boolean embeddingChange = !Objects.equals(product.getName(), request.getName())
+                || !Objects.equals(product.getDescription(), request.getDescription());
+
+        boolean majorChange = embeddingChange
                 || !Objects.equals(product.getBrand().getId(), brand.getId())
                 || !Objects.equals(product.getOption1Name(), request.getOption1Name())
                 || !Objects.equals(product.getOption2Name(), request.getOption2Name())
@@ -695,7 +697,10 @@ public class ProductService {
                     .map(ProductFullUpdateRequest.ImageItem::getId)
                     .toList();
 
-            for (ProductImage oldImg : productImageRepository.findByProduct_Id(pid)) {
+            Map<Long, ProductImage> existingImagesById = productImageRepository.findByProduct_Id(pid)
+                    .stream().collect(java.util.stream.Collectors.toMap(ProductImage::getId, img -> img));
+
+            for (ProductImage oldImg : existingImagesById.values()) {
                 if (!newImageIds.contains(oldImg.getId())) {
                     productImageRepository.delete(oldImg);
                     majorChange = true;
@@ -703,14 +708,13 @@ public class ProductService {
             }
             productImageRepository.flush();
 
-            // Tính max position của ảnh còn lại sau khi xóa để tránh duplicate
-            int nextPosition = productImageRepository.findByProduct_Id(pid).stream()
-                    .mapToInt(ProductImage::getPosition)
-                    .max()
-                    .orElse(-1) + 1;
-
+            int nextPosition = 0;
             for (ProductFullUpdateRequest.ImageItem imgItem : request.getImages()) {
-                if (imgItem.getId() == null && imgItem.getImageUrl() != null && !imgItem.getImageUrl().isBlank()) {
+                if (imgItem.getId() != null && existingImagesById.containsKey(imgItem.getId())) {
+                    ProductImage existing = existingImagesById.get(imgItem.getId());
+                    existing.setPosition(nextPosition++);
+                    productImageRepository.save(existing);
+                } else if (imgItem.getId() == null && imgItem.getImageUrl() != null && !imgItem.getImageUrl().isBlank()) {
                     ProductImage newImage = new ProductImage();
                     newImage.setProduct(product);
                     newImage.setImageUrl(imgItem.getImageUrl());
@@ -746,7 +750,7 @@ public class ProductService {
         }
 
         ProductResponse response = getProductsByIds(List.of(pid)).get(0);
-        if (product.getStatus() == Product.Status.ACTIVE) {
+        if (embeddingChange && product.getStatus() == Product.Status.ACTIVE) {
             eventPublisher.publishEvent(new ProductChangedEvent(this, pid));
         }
         return response;
