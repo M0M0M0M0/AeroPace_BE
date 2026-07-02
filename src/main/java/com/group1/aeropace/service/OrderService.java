@@ -200,8 +200,9 @@ public class OrderService {
 
         orderItemRepository.saveAll(orderItems);
 
-        order.setTotalPrice(total);
-        order.setVat(total.multiply(new BigDecimal("0.10")).setScale(2, RoundingMode.HALF_UP));
+        BigDecimal vat = total.multiply(new BigDecimal("0.10")).setScale(2, RoundingMode.HALF_UP);
+        order.setVat(vat);
+        order.setTotalPrice(total.add(vat).add(order.getShippingFee()));
         order.setUpdatedAt(LocalDateTime.now());
 
         order = orderRepository.save(order);
