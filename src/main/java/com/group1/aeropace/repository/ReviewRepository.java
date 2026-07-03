@@ -24,7 +24,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             SELECT r FROM Review r
             WHERE r.product.id = :productId
               AND r.status = 'ACTIVE'
-fix:              AND (:rating IS NULL OR (r.rating >= :rating AND r.rating < :rating + 1))
+              AND (:rating IS NULL OR (r.rating >= :rating AND r.rating < :rating + 1))
             """)
     Page<Review> findActiveByProduct(
             @Param("productId") Long productId,
