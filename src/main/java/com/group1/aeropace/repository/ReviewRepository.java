@@ -24,7 +24,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             SELECT r FROM Review r
             WHERE r.product.id = :productId
               AND r.status = 'ACTIVE'
-              AND (:rating IS NULL OR r.rating = :rating)
+fix:              AND (:rating IS NULL OR (r.rating >= :rating AND r.rating < :rating + 1))
             """)
     Page<Review> findActiveByProduct(
             @Param("productId") Long productId,
@@ -61,7 +61,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             SELECT r FROM Review r
             WHERE (:productId IS NULL OR r.product.id = :productId)
               AND (:status IS NULL OR r.status = :status)
-              AND (:rating IS NULL OR r.rating = :rating)
+              AND (:rating IS NULL OR (r.rating >= :rating AND r.rating < :rating + 1))
               AND (:userId IS NULL OR r.user.id = :userId)
               AND (:orderCode IS NULL OR r.order.orderCode = :orderCode)
               AND r.status NOT IN (
@@ -73,7 +73,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             SELECT count(r) FROM Review r
             WHERE (:productId IS NULL OR r.product.id = :productId)
               AND (:status IS NULL OR r.status = :status)
-              AND (:rating IS NULL OR r.rating = :rating)
+              AND (:rating IS NULL OR (r.rating >= :rating AND r.rating < :rating + 1))
               AND (:userId IS NULL OR r.user.id = :userId)
               AND (:orderCode IS NULL OR r.order.orderCode = :orderCode)
               AND r.status NOT IN (
