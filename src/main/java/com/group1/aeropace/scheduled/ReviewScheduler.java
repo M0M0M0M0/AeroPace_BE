@@ -16,7 +16,7 @@ public class ReviewScheduler {
 
     private final ReviewRepository reviewRepository;
 
-    // Chạy lúc 2 giờ sáng mỗi ngày
+    // Chạy lúc 2 giờ sáng
     @Scheduled(cron = "0 0 2 * * *")
     @Transactional
     public void expirePendingReviews() {
