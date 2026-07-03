@@ -19,6 +19,9 @@ import com.stripe.exception.StripeException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -29,6 +32,7 @@ import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import lombok.extern.slf4j.Slf4j;
@@ -483,8 +487,29 @@ public class OrderService {
         return orderRepository.findAll(spec, Sort.by(Sort.Direction.ASC, "id"))
                 .stream()
                 .map(this::mapToOrderListResponse)
-                .filter(order -> order.getPaymentStatus() != PaymentStatus.FAILED)
                 .toList();
+    }
+
+    // Dùng cho trang Admin Orders (server-side pagination) — cùng bộ filter với getAllOrders nhưng phân trang tại DB.
+    public Map<String, Object> getAllOrdersPaged(
+            String orderCode, String receiverName, String phoneNumber,
+            String shippingAddress, String status,
+            String dateFrom, String dateTo, Long userId,
+            int page, int size
+    ) {
+        var spec = OrderSpecification.build(
+                orderCode, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo, userId
+        );
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Order> result = orderRepository.findAll(spec, pageable);
+        List<OrderListResponse> orders = result.getContent().stream()
+                .map(this::mapToOrderListResponse)
+                .toList();
+        return Map.of(
+                "orders", orders,
+                "totalPages", result.getTotalPages(),
+                "totalElements", result.getTotalElements()
+        );
     }
 
     /**

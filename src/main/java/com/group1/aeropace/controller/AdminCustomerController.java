@@ -6,8 +6,6 @@ import com.group1.aeropace.service.AdminCustomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/admin/customers")
 public class AdminCustomerController {
@@ -16,8 +14,24 @@ public class AdminCustomerController {
     private AdminCustomerService adminCustomerService;
 
     @GetMapping
-    public List<AdminCustomerResponse> getAllCustomers() {
-        return adminCustomerService.getAllCustomers();
+    public Object getAllCustomers(
+            @RequestParam(required = false) String searchId,
+            @RequestParam(required = false) String searchName,
+            @RequestParam(required = false) String searchEmail,
+            @RequestParam(required = false) String searchPhone,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
+    ) {
+        if (page == null) {
+            return adminCustomerService.getAllCustomers();
+        }
+        return adminCustomerService.getAllCustomersPaged(
+                searchId, searchName, searchEmail, searchPhone, status, dateFrom, dateTo,
+                page, size != null ? size : 20
+        );
     }
 
     @GetMapping("/{userId}")

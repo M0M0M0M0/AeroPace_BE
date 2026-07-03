@@ -2,6 +2,8 @@ package com.group1.aeropace.specification;
 
 import com.group1.aeropace.entity.Order;
 import com.group1.aeropace.enums.OrderStatus;
+import com.group1.aeropace.enums.PaymentStatus;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDate;
 
@@ -17,10 +19,11 @@ public class OrderSpecification {
                 .and(likeReceiverName(receiverName))
                 .and(likePhoneNumber(phoneNumber))
                 .and(likeAddress(shippingAddress))
-                .and(equalStatus(status))
+                .and(matchStatus(status))
                 .and(fromDate(dateFrom))
                 .and(toDate(dateTo))
-                .and(equalUserId(userId));
+                .and(equalUserId(userId))
+                .and(notFailedPayment());
     }
 
     private static Specification<Order> likeOrderCode(String orderCode) {
@@ -51,11 +54,32 @@ public class OrderSpecification {
         };
     }
 
-    private static Specification<Order> equalStatus(String status) {
+    // "status" chấp nhận cả các nhóm ảo dùng riêng cho admin order list (không phải giá trị OrderStatus thật):
+    // PENDING_ACTION = đơn PAID cần xử lý; CANCELLED = đã hủy hoặc đang chờ hoàn tiền (trừ đã hoàn xong); REFUNDED = đã hoàn tiền.
+    private static Specification<Order> matchStatus(String status) {
         return (root, query, cb) -> {
             if (status == null || status.isBlank() || status.equals("ALL")) return null;
-            return cb.equal(root.get("status"), OrderStatus.valueOf(status));
+            switch (status) {
+                case "PENDING_ACTION":
+                    return cb.equal(root.get("status"), OrderStatus.PAID);
+                case "REFUNDED":
+                    return cb.equal(root.get("paymentStatus"), PaymentStatus.REFUNDED);
+                case "CANCELLED": {
+                    Predicate cancelledOrRefundPending = cb.or(
+                            cb.equal(root.get("status"), OrderStatus.CANCELLED),
+                            cb.equal(root.get("paymentStatus"), PaymentStatus.REFUND_PENDING)
+                    );
+                    Predicate notRefunded = cb.notEqual(root.get("paymentStatus"), PaymentStatus.REFUNDED);
+                    return cb.and(cancelledOrRefundPending, notRefunded);
+                }
+                default:
+                    return cb.equal(root.get("status"), OrderStatus.valueOf(status));
+            }
         };
+    }
+
+    private static Specification<Order> notFailedPayment() {
+        return (root, query, cb) -> cb.notEqual(root.get("paymentStatus"), PaymentStatus.FAILED);
     }
 
     private static Specification<Order> fromDate(String dateFrom) {

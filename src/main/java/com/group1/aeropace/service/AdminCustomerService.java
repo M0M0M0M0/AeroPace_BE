@@ -11,8 +11,10 @@ import com.group1.aeropace.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AdminCustomerService {
@@ -30,6 +32,47 @@ public class AdminCustomerService {
                         u.getRole().getName().equalsIgnoreCase("USER"))
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    // Dùng cho trang Admin Customers (pagination) — cùng bộ filter với UI hiện tại, áp dụng và cắt trang trong bộ nhớ
+    // (User/CustomerProfile không có Specification sẵn, giữ nguyên cách map hiện có thay vì viết query join mới).
+    public Map<String, Object> getAllCustomersPaged(
+            String searchId, String searchName, String searchEmail, String searchPhone,
+            String status, String dateFrom, String dateTo,
+            int page, int size
+    ) {
+        List<AdminCustomerResponse> filtered = getAllCustomers().stream()
+                .filter(c -> searchId == null || searchId.isBlank()
+                        || String.valueOf(c.getUserId()).contains(searchId.trim()))
+                .filter(c -> searchName == null || searchName.isBlank()
+                        || ((c.getFullName() != null ? c.getFullName() : "") + " " + (c.getUsername() != null ? c.getUsername() : ""))
+                                .toLowerCase().contains(searchName.toLowerCase()))
+                .filter(c -> searchEmail == null || searchEmail.isBlank()
+                        || (c.getEmail() != null && c.getEmail().toLowerCase().contains(searchEmail.toLowerCase())))
+                .filter(c -> searchPhone == null || searchPhone.isBlank()
+                        || (c.getPhoneNumber() != null && c.getPhoneNumber().contains(searchPhone.trim())))
+                .filter(c -> status == null || status.isBlank() || status.equals("ALL")
+                        || status.equalsIgnoreCase(c.getStatus()))
+                .filter(c -> {
+                    if ((dateFrom == null || dateFrom.isBlank()) && (dateTo == null || dateTo.isBlank())) return true;
+                    if (c.getCreatedAt() == null) return false;
+                    LocalDate d = c.getCreatedAt().toLocalDate();
+                    if (dateFrom != null && !dateFrom.isBlank() && d.isBefore(LocalDate.parse(dateFrom))) return false;
+                    if (dateTo != null && !dateTo.isBlank() && d.isAfter(LocalDate.parse(dateTo))) return false;
+                    return true;
+                })
+                .toList();
+
+        int totalElements = filtered.size();
+        int totalPages = Math.max((int) Math.ceil(totalElements / (double) size), 1);
+        int from = Math.min(page * size, totalElements);
+        int to = Math.min(from + size, totalElements);
+
+        return Map.of(
+                "customers", filtered.subList(from, to),
+                "totalPages", totalPages,
+                "totalElements", totalElements
+        );
     }
 
     public AdminCustomerDetailResponse getCustomerDetail(Long userId) {
