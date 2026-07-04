@@ -32,7 +32,6 @@ public class PaymentController {
     public ResponseEntity<?> createPaymentIntent(
             @Valid @RequestBody CheckoutRequest request) {
         try {
-            // Tạo PaymentIntent trên Stripe (USD, đơn vị cents — nhân 100)
             long amountCents = request.getGrandTotal()
                     .setScale(2, RoundingMode.HALF_UP)
                     .movePointRight(2)

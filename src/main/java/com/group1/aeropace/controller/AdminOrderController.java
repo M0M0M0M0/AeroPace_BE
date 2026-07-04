@@ -34,7 +34,6 @@ public class AdminOrderController {
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size
     ) {
-        // page không được truyền (vd. Dashboard, thống kê nhanh) → trả về toàn bộ danh sách như cũ.
         if (page == null) {
             return orderService.getAllOrders(
                     orderCode, receiverName, phoneNumber, shippingAddress, status, dateFrom, dateTo, userId

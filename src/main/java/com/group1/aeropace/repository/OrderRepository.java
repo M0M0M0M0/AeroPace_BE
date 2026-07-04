@@ -23,11 +23,12 @@ public interface OrderRepository extends JpaRepository<Order, Long>,
             LocalDateTime time
     );
     Optional<Order> findByOrderCode(String orderCode);
+    List<Order> findByStatusAndDeliveredAtBefore(OrderStatus status, LocalDateTime time);
 
     @Query("""
         SELECT o.user.id, COUNT(o.id), SUM(o.totalPrice)
         FROM Order o
-        WHERE o.status = :status
+        WHERE o.status IN :statuses
           AND o.createdAt BETWEEN :from AND :to
         GROUP BY o.user.id
         ORDER BY SUM(o.totalPrice) DESC
@@ -35,7 +36,7 @@ public interface OrderRepository extends JpaRepository<Order, Long>,
     List<Object[]> findTopBuyersBetween(
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to,
-            @Param("status") OrderStatus status,
+            @Param("statuses") List<OrderStatus> statuses,
             Pageable pageable
     );
 }

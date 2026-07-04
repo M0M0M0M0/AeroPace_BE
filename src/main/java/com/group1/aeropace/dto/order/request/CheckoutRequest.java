@@ -43,7 +43,6 @@ public class CheckoutRequest {
     @Size(max = 100, message = "Province must not exceed 100 characters")
     private String province;
 
-    // Không dùng để tính toán (VAT được tính lại ở server), chỉ giữ để tương thích payload cũ.
     private BigDecimal vat;
 
     @NotNull(message = "Shipping method is required")

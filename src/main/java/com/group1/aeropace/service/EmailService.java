@@ -38,8 +38,6 @@ public class EmailService {
             helper.setText(templateBuilder.buildOrderConfirmation(order), true);
 
             mailSender.send(message);
-            log.info("[Email] Gửi xác nhận đơn {} thành công → {}", order.getOrderCode(), toEmail);
-
         } catch (Exception e) {
             log.error("[Email] Gửi xác nhận đơn {} thất bại: {}", order.getOrderCode(), e.getMessage(), e);
         }
@@ -64,7 +62,6 @@ public class EmailService {
             helper.setText(templateBuilder.buildRefundConfirmation(order), true);
 
             mailSender.send(message);
-            log.info("[Email] Gửi xác nhận refund đơn {} thành công → {}", order.getOrderCode(), toEmail);
 
         } catch (Exception e) {
             log.error("[Email] Gửi xác nhận refund đơn {} thất bại: {}", order.getOrderCode(), e.getMessage(), e);

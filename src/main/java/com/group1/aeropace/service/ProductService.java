@@ -60,7 +60,6 @@ public class ProductService {
 
     /**
      * Tạo mới một product. Mặc định status là ACTIVE nếu request không truyền vào.
-     * Chưa bao gồm variant và ảnh — phải tạo riêng qua {@code createVariant}.
      *
      * @throws AppException BRAND_NOT_FOUND nếu brandId không hợp lệ
      */
@@ -142,7 +141,6 @@ public class ProductService {
                 .replaceAll("-+", "-")
                 .trim();
 
-        // Thêm hậu tố số để đảm bảo slug là duy nhất nếu đã tồn tại
         String baseSlug = slug;
         int count = 1;
         while (productRepository.existsBySlug(slug)) {
@@ -161,43 +159,8 @@ public class ProductService {
                 inventoryService.getAvailableStockByVariantId(variant.getId())
         );
     }
-
     /**
-     * Tính giá thấp nhất trong các variant còn active.
-     * Trả về 0 nếu product chưa có variant hoặc tất cả đã bị xóa.
-     */
-    private BigDecimal extractMinPrice(Product product) {
-        if (product.getVariants() == null || product.getVariants().isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        return product.getVariants().stream()
-                .filter(v -> !Boolean.TRUE.equals(v.getIsDeleted()))
-                .map(ProductVariant::getPrice)
-                .filter(price -> price != null)
-                .min(BigDecimal::compareTo)
-                .orElse(BigDecimal.ZERO);
-    }
-
-    private String extractFirstImage(Product product) {
-        if (product.getImages() == null || product.getImages().isEmpty()) {
-            return null;
-        }
-
-        return product.getImages().stream()
-                .sorted(Comparator.comparing(
-                        ProductImage::getPosition,
-                        Comparator.nullsLast(Integer::compareTo)
-                ))
-                .findFirst()
-                .map(ProductImage::getImageUrl)
-                .orElse(null);
-    }
-
-    /**
-     * Lấy chi tiết một product cho client. Chỉ trả về product ACTIVE — mọi status khác bị coi là không tồn tại.
-     *
-     * @throws AppException PRODUCT_NOT_FOUND nếu không tìm thấy, đã bị xóa, archived, hoặc còn là draft
+     * Lấy chi tiết một product. Chỉ trả về product ACTIVE
      */
     public ProductResponse getProductDetail(Long id) {
         ProductResponse product = getProductsByIds(List.of(id))
@@ -213,11 +176,8 @@ public class ProductService {
 
     /**
      * Batch-load nhiều product theo danh sách ID, kèm ảnh, variant và category.
-     * Dùng pattern N+1-safe: load tất cả sub-entities trong một lần query rồi assemble bằng Map.
-     * <p>
-     * Ném exception ngay nếu bất kỳ ID nào không tìm thấy — caller phải đảm bảo toàn bộ ID hợp lệ.
      *
-     * @throws AppException PRODUCT_NOT_FOUND kèm danh sách ID thiếu
+     * @throws AppException PRODUCT_NOT_FOUND
      */
     public List<ProductResponse> getProductsByIds(List<Long> ids) {
 
@@ -262,7 +222,7 @@ public class ProductService {
      * Lấy danh sách product phân trang cho client (chỉ hiển thị product active).
      * Page size cố định 20.
      *
-     * @param sort "price,asc" | "price,desc" | "createdAt,desc" | "sold,desc" — null/không nhận diện được thì giữ mặc định (updatedAt desc).
+     * @param sort "price,asc" | "price,desc" | "createdAt,desc" | "sold,desc"
      */
     public Map<String, Object> getAllProductDetail(int page, String sort) {
         SortField sortField = parseSort(sort);
@@ -288,8 +248,6 @@ public class ProductService {
 
     /**
      * Tìm kiếm và filter product cho client với nhiều tiêu chí kết hợp.
-     * List rỗng ({@code []}) cho brandIds/categoryIds được coi là "không lọc theo field đó" (tương đương null).
-     * Trả về map rỗng thay vì ném exception khi không có kết quả.
      *
      * @param sort "price,asc" | "price,desc" | "createdAt,desc" | "sold,desc" — null/không nhận diện được thì giữ mặc định (updatedAt desc).
      */
@@ -307,7 +265,6 @@ public class ProductService {
             Integer maxReviewCount,
             String sort
     ) {
-        // Normalize: list rỗng hoặc string blank → null để query không bị filter sai
         if (brandIds != null && brandIds.isEmpty()) brandIds = null;
         if (categoryIds != null && categoryIds.isEmpty()) categoryIds = null;
         if (name != null && name.isBlank()) name = null;
@@ -356,9 +313,7 @@ public class ProductService {
     }
 
     /**
-     * Sort theo giá (min price của variant chưa xóa) hoặc theo tổng số lượng đã bán — cả hai đều không phải
-     * cột trực tiếp trên Product nên không thể ORDER BY ở DB. Load toàn bộ kết quả filter (không phân trang),
-     * enrich variant để lấy giá, sort trong Java, rồi tự cắt trang.
+     * Sort theo giá (min price của variant chưa xóa) hoặc theo tổng số lượng đã bán
      */
     private Map<String, Object> sortAndPaginate(List<ProductResponse> all, SortField sortField, int page) {
         if (all.isEmpty()) return Map.of("products", List.of(), "totalPages", 0);
@@ -405,9 +360,7 @@ public class ProductService {
     }
 
     /**
-     * Filter product cho admin với bộ tiêu chí mở rộng hơn client, bao gồm:
-     * status, productId, variantId, SKU, khoảng tồn kho.
-     * List rỗng được normalize về null để tránh lọc nhầm.
+     * Filter product cho admin
      */
     @Transactional(readOnly = true)
     public Map<String, Object> filterProductsForAdmin(
@@ -506,7 +459,7 @@ public class ProductService {
         );
     }
 
-    // Enrich danh sách product với ảnh, variant và category (3 query tách biệt, tránh N+1)
+    // Enrich danh sách product
     private void enrichProducts(List<ProductResponse> products, List<Long> ids) {
         var images     = productImageRepository.getImagesByProductIds(ids);
         var variants   = productVariantRepository.getVariantsByProductIds(ids);
@@ -526,9 +479,6 @@ public class ProductService {
     /**
      * Lấy danh sách sản phẩm bán chạy nhất trong khoảng thời gian cho trước.
      * Kết quả được sắp xếp theo tổng số lượng bán giảm dần, giới hạn bởi {@code limit}.
-     * <p>
-     * Thứ tự rank từ query được bảo toàn qua toàn bộ pipeline (productIds → soldMap → kết quả cuối).
-     * Product không còn tồn tại trong DB sẽ bị bỏ qua thay vì ném exception.
      *
      * @param dateFrom ngày bắt đầu (inclusive)
      * @param dateTo   ngày kết thúc (inclusive, tính đến 23:59:59)
@@ -583,15 +533,7 @@ public class ProductService {
                 .toList();
     }
     /**
-     * Full update product theo business rule:
-     * - Nếu product đã có order → ARCHIVE product cũ, tạo product mới với thông tin mới
-     * - Nếu chưa có order → update thẳng
-     *
-     * Với từng variant:
-     * - Nếu variant đã có order → soft delete variant cũ, tạo variant mới
-     * - Nếu chưa có order → update thẳng hoặc hard delete nếu bị remove
-     *
-     * Images và categories luôn update thẳng (không cần check order)
+     * Full update product
      */
     @Transactional
     public ProductResponse fullUpdateProduct(Long productId, ProductFullUpdateRequest request) {
@@ -611,8 +553,6 @@ public class ProductService {
                 || !Objects.equals(product.getOption2Name(), request.getOption2Name())
                 || !Objects.equals(product.getOption3Name(), request.getOption3Name());
 
-        // Bắt buộc ARCHIVED trước khi DELETED — không cho xóa trực tiếp từ ACTIVE/DRAFT.
-        // Cho phép lưu lại sản phẩm vốn đã DELETED (idempotent).
         Product.Status newStatus = request.getStatus() != null ? request.getStatus() : product.getStatus();
         if (newStatus == Product.Status.DELETED
                 && product.getStatus() != Product.Status.ARCHIVED
@@ -632,7 +572,7 @@ public class ProductService {
 
         final Long pid = product.getId();
 
-        // Xóa variant không còn trong request (inline để tránh double-snapshot)
+        // Xóa variant không còn trong request
         List<Long> keepVariantIds = request.getVariants().stream()
                 .filter(v -> v.getId() != null && !Boolean.TRUE.equals(v.getIsDeleted()))
                 .map(ProductFullUpdateRequest.VariantItem::getId)
@@ -652,9 +592,7 @@ public class ProductService {
                 }
             }
         }
-        // Flush before inserting new variants — Hibernate defaults to insert-before-update,
-        // so without this flush the old active_variant=1 row still exists when the INSERT runs,
-        // causing a duplicate-key violation on uq_variant_active.
+        // Flush
         productVariantRepository.flush();
 
         boolean[] variantOptionChanged = {false};
@@ -727,7 +665,7 @@ public class ProductService {
             }
         }
 
-        // Categories: xóa hết rồi gán lại (batch load tránh N+1)
+        // Categories
         if (request.getCategoryIds() != null) {
             productCategoryRepository.deleteByProduct_Id(pid);
             final Product savedProduct = product;

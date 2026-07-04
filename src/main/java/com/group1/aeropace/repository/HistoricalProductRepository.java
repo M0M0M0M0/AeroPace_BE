@@ -11,12 +11,10 @@ import java.util.Optional;
 
 public interface HistoricalProductRepository extends JpaRepository<HistoricalProduct, Long> {
 
-    // Đóng record đang hiệu lực (valid_to = NULL) của một product
     @Modifying
     @Query("UPDATE HistoricalProduct hp SET hp.validTo = :now WHERE hp.productId = :productId AND hp.validTo IS NULL")
     void closeCurrentSnapshot(@Param("productId") Long productId, @Param("now") LocalDateTime now);
 
-    // Temporal lookup: tìm snapshot hiệu lực tại thời điểm orderDate
     @Query("""
         SELECT hp FROM HistoricalProduct hp
         WHERE hp.productId = :productId
@@ -28,10 +26,8 @@ public interface HistoricalProductRepository extends JpaRepository<HistoricalPro
             @Param("orderDate") LocalDateTime orderDate
     );
 
-    // Fallback: snapshot sớm nhất — dùng khi order được đặt trước khi snapshot đầu tiên tồn tại
     @Query("SELECT hp FROM HistoricalProduct hp WHERE hp.productId = :productId ORDER BY hp.validFrom ASC LIMIT 1")
     Optional<HistoricalProduct> findEarliestByProductId(@Param("productId") Long productId);
 
-    // Kiểm tra đã có snapshot nào chưa (dùng khi quyết định tạo initial snapshot)
     boolean existsByProductId(Long productId);
 }

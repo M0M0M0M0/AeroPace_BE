@@ -299,6 +299,9 @@ public class OrderService {
 
         order.setStatus(newStatus);
         order.setUpdatedAt(LocalDateTime.now());
+        if (newStatus == OrderStatus.DELIVERED) {
+            order.setDeliveredAt(LocalDateTime.now());
+        }
         if(order.getPaymentStatus() == PaymentStatus.PAID && newStatus == OrderStatus.CANCELLED){
             order.setPaymentStatus(PaymentStatus.REFUND_PENDING) ;
         }
@@ -624,6 +627,16 @@ public class OrderService {
             throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
 
+        completeOrder(order);
+    }
+
+    /**
+     * Chuyển đơn DELIVERED → COMPLETED và tạo slot review PENDING cho từng sản phẩm.
+     * Dùng chung bởi confirmDelivered() (user tự xác nhận) và OrderScheduler
+     * (tự động hoàn tất sau 1 ngày nếu user không xác nhận).
+     */
+    @Transactional
+    public void completeOrder(Order order) {
         order.setStatus(OrderStatus.COMPLETED);
         order.setUpdatedAt(LocalDateTime.now());
         orderRepository.save(order);

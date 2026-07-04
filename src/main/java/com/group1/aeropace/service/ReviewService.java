@@ -37,7 +37,6 @@ public class ReviewService {
 
     /**
      * Tạo slot review PENDING khi order chuyển sang COMPLETED.
-     * Bỏ qua nếu đã tồn tại để tránh tạo trùng khi event được phát lại.
      */
     @Transactional
     public void createPendingReview(Order order, Product product, ProductVariant variant, User user) {
@@ -84,7 +83,7 @@ public class ReviewService {
 
     /**
      * Chỉnh sửa review: đánh dấu bản cũ là EDITED rồi insert bản mới ACTIVE.
-     * Deadline chỉnh sửa tính từ ngày tạo review gốc (parent = null), không phải từ lần edit gần nhất.
+     * Deadline chỉnh sửa tính từ ngày tạo review gốc
      */
     @Transactional
     public ReviewResponse editReview(Long reviewId, ReviewEditRequest request, Long currentUserId) {
@@ -106,7 +105,7 @@ public class ReviewService {
 
         validateRatingStep(request.getRating());
 
-        // saveAndFlush ép Hibernate flush UPDATE trước INSERT để tránh vi phạm unique constraint trên generated column
+        // saveAndFlush
         original.setStatus(ReviewStatus.EDITED);
         reviewRepository.saveAndFlush(original);
 

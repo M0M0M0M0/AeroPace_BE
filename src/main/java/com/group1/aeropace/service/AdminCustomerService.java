@@ -34,8 +34,6 @@ public class AdminCustomerService {
                 .toList();
     }
 
-    // Dùng cho trang Admin Customers (pagination) — cùng bộ filter với UI hiện tại, áp dụng và cắt trang trong bộ nhớ
-    // (User/CustomerProfile không có Specification sẵn, giữ nguyên cách map hiện có thay vì viết query join mới).
     public Map<String, Object> getAllCustomersPaged(
             String searchId, String searchName, String searchEmail, String searchPhone,
             String status, String dateFrom, String dateTo,

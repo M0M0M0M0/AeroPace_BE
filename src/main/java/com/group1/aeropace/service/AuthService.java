@@ -73,7 +73,6 @@ public class AuthService {
         User user = new User();
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
-        // Status mặc định khi đăng ký là ACTIVE — admin phải tự lock nếu cần
         user.setStatus("ACTIVE");
 
         user.setPassword(passwordEncoder.encode(request.getPassword()));

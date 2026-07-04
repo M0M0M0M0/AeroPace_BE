@@ -24,12 +24,10 @@ public class OrderEventListener {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
 
-    //đảm bảo chỉ gửi email khi transaction thành công
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleOrderConfirmed(OrderConfirmedEvent event) {
         Order order = event.getOrder();
 
-        // Re-fetch order sau commit
         Order freshOrder = orderRepository.findById(order.getId())
                 .orElseGet(() -> {
                     log.warn("[Event] Không tìm thấy order id={}", order.getId());
@@ -52,12 +50,10 @@ public class OrderEventListener {
         );
     }
 
-    //đảm bảo chỉ gửi email khi refund đã commit thành công vào DB
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleRefundCompleted(RefundCompletedEvent event) {
         Order order = event.getOrder();
 
-        // Re-fetch order sau commit
         Order freshOrder = orderRepository.findById(order.getId())
                 .orElseGet(() -> {
                     log.warn("[Event] Không tìm thấy order id={}", order.getId());

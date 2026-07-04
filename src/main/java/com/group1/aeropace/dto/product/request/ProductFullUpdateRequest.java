@@ -36,7 +36,6 @@ public class ProductFullUpdateRequest {
 
     private Product.Status status;
 
-    // Cho phép rỗng/null — sản phẩm DRAFT có thể chưa có variant nào (xem Product Status Flow trong CLAUDE.md)
     @Valid
     private List<VariantItem> variants;
 
@@ -59,7 +58,6 @@ public class ProductFullUpdateRequest {
         @Size(max = 50, message = "Option 3 value must not exceed 50 characters")
         private String option3Value;
 
-        // Không @NotNull: variant thiếu price/option1Value bị service bỏ qua có chủ đích (xem ProductService.fullCreateProduct)
         @DecimalMin(value = "0.0", inclusive = false, message = "Price must be greater than 0")
         private BigDecimal price;
 

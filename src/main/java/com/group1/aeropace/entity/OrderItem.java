@@ -31,7 +31,6 @@ public class OrderItem {
 
     private BigDecimal price;
 
-    // Snapshot dữ liệu tại thời điểm đặt hàng — không được cập nhật sau khi tạo
     @Column(name = "product_name", nullable = false, length = 255)
     private String productName;
 

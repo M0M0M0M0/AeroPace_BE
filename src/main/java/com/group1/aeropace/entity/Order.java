@@ -103,6 +103,11 @@ public class Order {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // Mốc thời gian đơn chuyển sang DELIVERED — dùng riêng cho OrderScheduler thay vì updated_at
+    // (updated_at có thể bị ghi đè bởi các thay đổi khác không liên quan đến việc giao hàng).
+    @Column(name = "delivered_at")
+    private LocalDateTime deliveredAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

@@ -69,7 +69,6 @@ public class CartService {
             variant = productVariantRepository.findById(request.getProductVariantId())
                     .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
         } else if (request.getProductId() != null) {
-            // Fallback: lấy variant đầu tiên còn active, dùng cho sản phẩm không có lựa chọn
             variant = productVariantRepository
                     .findFirstByProductIdAndIsDeletedFalseOrderByIdAsc(request.getProductId())
                     .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -170,7 +169,7 @@ public class CartService {
      * Chiến lược merge:
      * - Item đã tồn tại trong DB: cộng dồn số lượng, nhưng cap theo stock hiện tại để tránh over-order.
      * - Item chưa có: tạo mới với quantity cap theo stock.
-     * - Variant không còn tồn tại hoặc bị xóa: bỏ qua thay vì ném exception, tránh block toàn bộ flow merge.
+     * - Variant không còn tồn tại hoặc bị xóa: bỏ qua
      *
      * @param guestItems danh sách item từ localStorage phía client
      * @throws AppException USER_NOT_FOUND
@@ -221,7 +220,6 @@ public class CartService {
 
     /**
      * Tính tổng số lượng, tổng tiền theo giá hiện tại của variant (không phải giá tại thời điểm thêm vào cart).
-     * Giá có thể thay đổi giữa lúc thêm vào cart và lúc xem lại — đây là behavior có chủ đích.
      */
     private CartResponse mapToCartResponse(User user, List<CartItem> cartItems) {
         List<CartItemResponse> itemResponses = cartItems.stream()
@@ -247,7 +245,6 @@ public class CartService {
 
     /**
      * Lấy ảnh đầu tiên của product theo position để hiển thị thumbnail trong cart.
-     * Position null xếp về 0 thay vì cuối để tránh ảnh không có position bị ẩn.
      */
     private CartItemResponse mapToCartItemResponse(CartItem cartItem) {
         ProductVariant variant = cartItem.getProductVariant();

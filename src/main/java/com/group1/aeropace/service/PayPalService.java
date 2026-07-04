@@ -51,7 +51,7 @@ public class PayPalService {
 
     /**
      * Refund một giao dịch PayPal
-     * @param captureId  — chính là paymentTransactionId (ch_xxx của PayPal capture)
+     * @param captureId
      */
     public void refundPayPal(String captureId) {
         String payPalAccessToken = getPayPalAccessToken();

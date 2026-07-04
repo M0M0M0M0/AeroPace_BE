@@ -31,11 +31,9 @@ public class ProductEmbeddingService {
     private final EmbeddingService embeddingService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // In-memory cache: productId → float[] vector
     private final ConcurrentHashMap<Long, float[]> embeddingCache = new ConcurrentHashMap<>();
     private final AtomicBoolean cacheLoaded = new AtomicBoolean(false);
 
-    // Gọi từ ProductEmbeddingStartupRunner sau khi embed xong
     public void warmCache() {
         embeddingCache.clear();
         cacheLoaded.set(false);

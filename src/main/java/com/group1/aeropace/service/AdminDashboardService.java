@@ -57,7 +57,7 @@ public class AdminDashboardService {
         LocalDateTime to   = LocalDate.parse(dateTo).atTime(23, 59, 59);
 
         List<Object[]> rows = orderRepository.findTopBuyersBetween(
-                from, to, OrderStatus.COMPLETED, PageRequest.of(0, limit));
+                from, to, List.of(OrderStatus.DELIVERED, OrderStatus.COMPLETED), PageRequest.of(0, limit));
 
         if (rows.isEmpty()) return List.of();
 

@@ -24,7 +24,6 @@ public class InventoryItem {
     @Column(name = "sku", length = 100)
     private String sku;
 
-    // Cached stock — nguồn sự thật là stock_movements, field này dùng để read nhanh
     @Column(name = "cached_stock", nullable = false)
     private Integer cachedStock = 0;
 
