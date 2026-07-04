@@ -14,7 +14,6 @@ public class UploadController {
 
     private final UploadService uploadService;
 
-    // PUBLIC — Upload avatar (cần public vì dùng được lúc đăng ký, trước khi có JWT)
     // POST /api/v1/uploads/avatar
     @PostMapping("/avatar")
     public Map<String, String> uploadAvatar(@RequestParam("file") MultipartFile file) {

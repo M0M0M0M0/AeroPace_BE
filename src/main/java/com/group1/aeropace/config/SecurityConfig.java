@@ -32,7 +32,7 @@ public class SecurityConfig {
                         // Công khai
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
-                        // Avatar upload công khai vì dùng được ngay lúc đăng ký (chưa có JWT)
+                        // Avatar upload
                         .requestMatchers(HttpMethod.POST, "/api/v1/uploads/avatar").permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/v1/products/historical/**")
