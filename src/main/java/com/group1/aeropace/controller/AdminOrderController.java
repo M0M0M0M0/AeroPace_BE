@@ -6,6 +6,7 @@ import com.group1.aeropace.dto.refund.response.RefundResponse;
 import com.group1.aeropace.enums.OrderStatus;
 import com.group1.aeropace.service.OrderService;
 import com.group1.aeropace.service.RefundService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -61,7 +62,7 @@ public class AdminOrderController {
     }
 
     @PostMapping("/{orderCode}/refund")
-    public RefundResponse refund(@PathVariable String orderCode, @RequestBody RefundRequest request){
+    public RefundResponse refund(@PathVariable String orderCode, @Valid @RequestBody RefundRequest request){
         return refundService.refund(orderCode, request);
     }
 }

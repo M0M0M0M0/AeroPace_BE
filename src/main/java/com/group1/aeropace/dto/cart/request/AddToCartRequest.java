@@ -10,7 +10,7 @@ public class AddToCartRequest {
 
     private Long userId;
     private String sessionId;
-    @NotNull(message = "Product variant id is required")
+    @NotNull(message = "Product id is required")
     private Long productId;
     private Long productVariantId;
 

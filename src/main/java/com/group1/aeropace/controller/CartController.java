@@ -56,7 +56,7 @@ public class CartController {
 
     @PostMapping("/merge")
     public CartResponse mergeCart(
-            @RequestBody List<AddToCartRequest> guestItems,
+            @Valid @RequestBody List<AddToCartRequest> guestItems,
             Authentication authentication
     ) {
         Long userId = extractUserId(authentication);

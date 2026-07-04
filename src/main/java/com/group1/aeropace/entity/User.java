@@ -21,21 +21,21 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "username", length = 50, unique = true)
+    @Column(name = "username", length = 50, unique = true, nullable = false)
     private String username;
 
-    @Column(name = "email", length = 255, unique = true)
+    @Column(name = "email", length = 255, unique = true, nullable = false)
     private String email;
 
     @JsonIgnore
-    @Column(name = "password", length = 255)
+    @Column(name = "password", length = 255, nullable = false)
     private String password;
 
     @ManyToOne
-    @JoinColumn(name = "role_id")
+    @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
-    @Column(name = "status", length = 20)
+    @Column(name = "status", length = 20, nullable = false)
     private String status;
 
     @Column(name = "created_at")

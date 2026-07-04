@@ -3,6 +3,7 @@ package com.group1.aeropace.controller;
 import com.group1.aeropace.dto.customerprofile.request.CustomerProfileRequest;
 import com.group1.aeropace.dto.customerprofile.response.CustomerProfileResponse;
 import com.group1.aeropace.service.CustomerProfileService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,7 +21,7 @@ public class CustomerProfileController {
 
     @PutMapping("/{id}")
     public CustomerProfileResponse updateCustomerProfile(@PathVariable Long id,
-                                                         @RequestBody CustomerProfileRequest request) {
+                                                         @Valid @RequestBody CustomerProfileRequest request) {
         return customerProfileService.updateCustomerProfile(id, request);
     }
 }

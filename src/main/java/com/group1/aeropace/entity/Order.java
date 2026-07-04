@@ -31,17 +31,17 @@ public class Order {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "order_code", unique = true)
+    @Column(name = "order_code", length = 30, unique = true)
     private String orderCode;
 
-    @Column(name = "total_price", nullable = false)
+    @Column(name = "total_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalPrice;
 
-    @Column(name = "vat", nullable = false)
+    @Column(name = "vat", nullable = false, precision = 12, scale = 2)
     private BigDecimal vat = BigDecimal.ZERO;
 
-    @Column(name = "shipping_fee")
-    private BigDecimal shippingFee;
+    @Column(name = "shipping_fee", nullable = false, precision = 15, scale = 2)
+    private BigDecimal shippingFee = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
@@ -52,31 +52,33 @@ public class Order {
     private PaymentMethod paymentMethod;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "payment_status")
+    @Column(name = "payment_status", length = 30, nullable = false)
     private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
+    @Column(name = "payment_order_id", length = 100)
     private String paymentOrderId;
+    @Column(name = "payment_transaction_id", length = 100)
     private String paymentTransactionId;
 
     @Column(name = "receiver_name", length = 255)
     private String receiverName;
 
-    @Column(name = "phone_number", length = 20)
+    @Column(name = "phone_number", length = 20, nullable = false)
     private String phoneNumber;
 
-    @Column(name = "shipping_address", length = 500)
+    @Column(name = "shipping_address", length = 500, nullable = false)
     private String shippingAddress;
 
-    @Column(name = "ward")
+    @Column(name = "ward", length = 100)
     private String ward;
 
-    @Column(name = "district")
+    @Column(name = "district", length = 100)
     private String district;
 
-    @Column(name = "province")
+    @Column(name = "province", length = 100)
     private String province;
 
-    @Column(name = "shipping_method")
+    @Column(name = "shipping_method", length = 50, nullable = false)
     private String shippingMethod;
 
     @Column(name = "note", length = 500)

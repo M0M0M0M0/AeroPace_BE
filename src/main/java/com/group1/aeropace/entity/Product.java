@@ -24,10 +24,10 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", length = 200)
+    @Column(name = "name", length = 200, nullable = false)
     private String name;
 
-    @Column(name = "slug", length = 300, unique = true)
+    @Column(name = "slug", length = 300, unique = true, nullable = false)
     private String slug;
 
     @Column(name = "description")
@@ -50,7 +50,7 @@ public class Product {
     @Column(name = "status", length = 20)
     private Status status = Status.ACTIVE;
 
-    @Column(name = "average_rating")
+    @Column(name = "average_rating", precision = 2, scale = 1)
     private BigDecimal averageRating = BigDecimal.ZERO;
 
     @Column(name = "review_count")

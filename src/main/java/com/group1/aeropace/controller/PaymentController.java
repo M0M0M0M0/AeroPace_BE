@@ -6,6 +6,7 @@ import com.group1.aeropace.entity.Order;
 import com.group1.aeropace.service.OrderService;
 import com.group1.aeropace.service.StripeService;
 import com.stripe.exception.StripeException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,7 +30,7 @@ public class PaymentController {
 
     @PostMapping("/create-payment-intent")
     public ResponseEntity<?> createPaymentIntent(
-            @RequestBody CheckoutRequest request) {
+            @Valid @RequestBody CheckoutRequest request) {
         try {
             // Tạo PaymentIntent trên Stripe (USD, đơn vị cents — nhân 100)
             long amountCents = request.getGrandTotal()

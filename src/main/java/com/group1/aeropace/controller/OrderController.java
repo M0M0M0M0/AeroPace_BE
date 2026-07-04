@@ -4,6 +4,7 @@ import com.group1.aeropace.dto.order.request.CheckoutRequest;
 import com.group1.aeropace.dto.order.request.UpdatePaymentRequest;
 import com.group1.aeropace.dto.order.response.OrderListResponse;
 import com.group1.aeropace.service.OrderService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,7 +21,7 @@ public class OrderController {
     private OrderService orderService;
 
     @PostMapping("/checkout")
-    public ResponseEntity<?> checkout(@RequestBody CheckoutRequest request) {
+    public ResponseEntity<?> checkout(@Valid @RequestBody CheckoutRequest request) {
         var order = orderService.checkout(request);
         return ResponseEntity.ok(Map.of("id", order.getId()));
     }
@@ -39,7 +40,7 @@ public class OrderController {
     @PatchMapping("/{orderId}/payment")
     public ResponseEntity<Void> updatePayment(
             @PathVariable Long orderId,
-            @RequestBody UpdatePaymentRequest request
+            @Valid @RequestBody UpdatePaymentRequest request
     ) {
         orderService.updatePayment(orderId, request);
         return ResponseEntity.ok().build();

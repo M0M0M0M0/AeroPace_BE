@@ -40,7 +40,7 @@ public class Review {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    @Column(name = "rating")
+    @Column(name = "rating", precision = 2, scale = 1)
     private BigDecimal rating;
 
     @Column(name = "comment", columnDefinition = "TEXT")

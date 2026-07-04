@@ -39,10 +39,10 @@ public class ProductVariant {
     @Column(name = "option3_value", length = 50)
     private String option3Value;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "compare_price")
+    @Column(name = "compare_price", precision = 10, scale = 2)
     private BigDecimal comparePrice;
 
     @Column(length = 100)

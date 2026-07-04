@@ -4,6 +4,7 @@ import com.group1.aeropace.dto.product.request.ProductFullUpdateRequest;
 import com.group1.aeropace.dto.product.response.ProductResponse;
 import com.group1.aeropace.entity.Product;
 import com.group1.aeropace.service.ProductService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -53,7 +54,7 @@ public class AdminProductController {
 
     @PostMapping("/full-create")
     public ResponseEntity<ProductResponse> fullCreateProduct(
-            @RequestBody ProductFullUpdateRequest request
+            @Valid @RequestBody ProductFullUpdateRequest request
     ) {
         ProductResponse result = productService.fullCreateProduct(request);
         return ResponseEntity.ok(result);
@@ -62,7 +63,7 @@ public class AdminProductController {
     @PutMapping("/{id}/full-update")
     public ResponseEntity<ProductResponse> fullUpdateProduct(
             @PathVariable Long id,
-            @RequestBody ProductFullUpdateRequest request
+            @Valid @RequestBody ProductFullUpdateRequest request
     ) {
         ProductResponse result = productService.fullUpdateProduct(id, request);
         return ResponseEntity.ok(result);

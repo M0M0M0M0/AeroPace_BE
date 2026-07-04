@@ -4,6 +4,7 @@ import com.group1.aeropace.dto.auth.request.LoginRequest;
 import com.group1.aeropace.dto.auth.request.RegisterRequest;
 import com.group1.aeropace.dto.auth.response.LoginResponse;
 import com.group1.aeropace.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,11 +16,11 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/login")
-    public LoginResponse login(@RequestBody LoginRequest request) {
+    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request.getEmail(), request.getPassword());
     }
     @PostMapping("/register")
-    public String register(@RequestBody RegisterRequest request) {
+    public String register(@Valid @RequestBody RegisterRequest request) {
         return authService.register(request);
     }
 }
