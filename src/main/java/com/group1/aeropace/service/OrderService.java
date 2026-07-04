@@ -595,7 +595,7 @@ public class OrderService {
         String year  = String.format("%04d", now.getYear());
         String month = String.format("%02d", now.getMonthValue());
         String day   = String.format("%02d", now.getDayOfMonth());
-        String rnd   = RandomStringUtils.randomAlphanumeric(6).toLowerCase();
+        String rnd   = RandomStringUtils.randomAlphanumeric(6).toUpperCase();
         String middle = "" + rnd.charAt(0)
                 + day.charAt(0)   + day.charAt(1)
                 + year.charAt(0)  + year.charAt(1)
